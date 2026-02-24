@@ -72,3 +72,14 @@ export interface User {
     loyaltyPoints?: number; // Points accumulated for free meal
     avatar?: string; // Avatar URL or emoji
 }
+
+export interface PendingRecharge {
+    id: string; // Firestore document ID
+    code: string;
+    amount: number;
+    userId: string;
+    userName: string;
+    status: 'PENDING' | 'COMPLETED';
+    createdAt: string;
+    processedAt?: number;
+}

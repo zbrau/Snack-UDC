@@ -150,7 +150,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, loyaltyPoints, onUp
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2 text-orange-700 dark:text-orange-400 font-bold text-sm">
                                     <Gift className="w-4 h-4" />
-                                    <span>Aperativo Rewards</span>
+                                    <span>Snack Udc Rewards</span>
                                 </div>
                                 <span className="text-xs font-medium text-orange-600 dark:text-orange-300">
                                     Tienes {loyaltyPoints} pts

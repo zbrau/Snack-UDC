@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { ArrowLeft, ChefHat, History, DollarSign, Menu as MenuIcon, Plus, Edit3, Trash2, Check, AlertCircle, Loader2, Save } from 'lucide-react';
-import { Category, MenuItem, Order, OrderStatus, Screen } from '../types';
+import { ArrowLeft, ChefHat, History, DollarSign, Menu as MenuIcon, Plus, Edit3, Trash2, Check, AlertCircle, Loader2, Save, User as UserIcon, Clock } from 'lucide-react';
+import { Category, MenuItem, Order, OrderStatus, Screen, PendingRecharge } from '../types';
 
 interface AdminScreenProps {
     orders: Order[];
@@ -18,6 +18,8 @@ interface AdminScreenProps {
     setEditingItem: (item: Partial<MenuItem>) => void;
     setActiveScreen: (screen: Screen) => void;
     handleAdminRecharge: () => void;
+    handleCompleteRecharge: (recharge: PendingRecharge) => void;
+    pendingRecharges: PendingRecharge[];
     handleUpdateOrderStatus: (id: string, status: OrderStatus) => void;
     openEditItemModal: (item?: MenuItem) => void;
     handleSaveItem: () => void;
@@ -40,6 +42,8 @@ const AdminScreen: React.FC<AdminScreenProps> = ({
     setEditingItem,
     setActiveScreen,
     handleAdminRecharge,
+    handleCompleteRecharge,
+    pendingRecharges,
     handleUpdateOrderStatus,
     openEditItemModal,
     handleSaveItem,
@@ -184,50 +188,97 @@ const AdminScreen: React.FC<AdminScreenProps> = ({
                     </div>
                 )}
 
-                {/* --- TAB: RECHARGE (REDESIGNED) --- */}
+                {/* --- TAB: RECHARGE --- */}
                 {adminTab === 'RECHARGE' && (
-                    <div className="bg-[#1e2330] rounded-[2.5rem] p-8 shadow-2xl border border-gray-800 animate-scale-in max-w-3xl mx-auto">
-                        <h3 className="font-bold text-xl mb-6 text-white border-b border-gray-800 pb-4">Validar Recarga</h3>
+                    <div className="space-y-6 animate-scale-in max-w-3xl mx-auto">
 
-                        <div className="space-y-6">
-                            <div className="relative">
-                                <input
-                                    value={adminRechargeCode}
-                                    onChange={e => setAdminRechargeCode(e.target.value)}
-                                    className="w-full bg-[#13161f] border border-gray-700 rounded-3xl pl-6 pr-32 py-5 text-white placeholder-gray-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all font-mono text-lg"
-                                    placeholder="Código UCOL-..."
-                                />
-                                <button
-                                    onClick={handleAdminRecharge}
-                                    disabled={isAdminProcessing || !adminRechargeCode}
-                                    className="absolute right-2 top-2 bottom-2 bg-[#22c55e] hover:bg-green-600 disabled:bg-gray-700 disabled:text-gray-500 text-black px-8 rounded-2xl font-bold transition-all active:scale-95 shadow-lg shadow-green-900/20"
-                                >
-                                    {isAdminProcessing ? <Loader2 className="animate-spin" /> : 'Validar'}
-                                </button>
+                        {/* Pending recharges list */}
+                        <div className="bg-[#1e2330] rounded-[2.5rem] p-6 border border-gray-800 shadow-2xl">
+                            <div className="flex items-center justify-between mb-5">
+                                <h3 className="font-bold text-lg text-white">Recargas Pendientes</h3>
+                                <span className={`text-xs font-bold px-3 py-1 rounded-full ${pendingRecharges.length > 0
+                                        ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                                        : 'bg-gray-700 text-gray-400'
+                                    }`}>
+                                    {pendingRecharges.length} pendiente{pendingRecharges.length !== 1 ? 's' : ''}
+                                </span>
                             </div>
 
-                            {adminFeedback && (
-                                <div className={`p-4 rounded-3xl border ${adminFeedback.type === 'success' ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/10 border-red-500/30 text-red-400'} flex items-center gap-3 animate-fade-in`}>
-                                    {adminFeedback.type === 'success' ? <Check size={20} /> : <AlertCircle size={20} />}
-                                    <span className="font-bold">{adminFeedback.msg}</span>
+                            {pendingRecharges.length === 0 ? (
+                                <div className="py-12 text-center text-gray-500">
+                                    <DollarSign className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                    <p className="text-sm">No hay recargas pendientes.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {pendingRecharges.map(r => {
+                                        const timeAgo = (() => {
+                                            const diff = Math.floor((Date.now() - new Date(r.createdAt).getTime()) / 1000);
+                                            if (diff < 60) return 'hace un momento';
+                                            if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`;
+                                            return `hace ${Math.floor(diff / 3600)} h`;
+                                        })();
+                                        return (
+                                            <div key={r.id} className="flex items-center justify-between p-4 bg-[#13161f] rounded-2xl border border-gray-800 hover:border-yellow-500/30 transition-all group">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 bg-yellow-500/10 rounded-xl flex items-center justify-center shrink-0">
+                                                        <UserIcon size={18} className="text-yellow-400" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-white text-sm">{r.userName}</p>
+                                                        <p className="text-[11px] text-gray-500 font-mono">{r.userId}</p>
+                                                        <div className="flex items-center gap-1 mt-0.5">
+                                                            <Clock size={10} className="text-gray-600" />
+                                                            <span className="text-[10px] text-gray-600">{timeAgo}</span>
+                                                            <span className="text-[10px] text-gray-700 mx-1">·</span>
+                                                            <span className="text-[10px] font-mono text-gray-600">{r.code}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-green-400 font-bold text-lg">+{r.amount} UC</span>
+                                                    <button
+                                                        onClick={() => handleCompleteRecharge(r)}
+                                                        disabled={isAdminProcessing}
+                                                        className="bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all active:scale-95 flex items-center gap-1.5 shadow-lg shadow-green-900/20"
+                                                    >
+                                                        <Check size={14} /> Completar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
+                        </div>
 
-                            <div className="mt-8 pt-8 border-t border-gray-800">
-                                <h4 className="text-gray-500 text-sm font-bold uppercase tracking-widest mb-4">Últimas Recargas</h4>
-                                <div className="space-y-3">
-                                    {/* Dummy Data for Visuals or could be real history */}
-                                    <div className="flex justify-between items-center p-4 rounded-3xl bg-[#13161f] border border-gray-800/50 hover:bg-[#1a1d29] transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <div className="bg-green-500/20 p-2.5 rounded-2xl text-green-500"><DollarSign size={20} /></div>
-                                            <div>
-                                                <p className="text-white text-sm font-bold font-mono">UCOL-500-1234</p>
-                                                <p className="text-gray-500 text-xs">Hace 2 minutos</p>
-                                            </div>
-                                        </div>
-                                        <span className="text-green-500 font-bold text-lg">+500 UC</span>
-                                    </div>
+                        {/* Manual code input */}
+                        <div className="bg-[#1e2330] rounded-[2.5rem] p-6 border border-gray-800 shadow-2xl">
+                            <h3 className="font-bold text-base text-white mb-4 border-b border-gray-800 pb-4">Ingresar Código Manualmente</h3>
+                            <div className="space-y-4">
+                                <div className="relative">
+                                    <input
+                                        value={adminRechargeCode}
+                                        onChange={e => setAdminRechargeCode(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleAdminRecharge()}
+                                        className="w-full bg-[#13161f] border border-gray-700 rounded-3xl pl-6 pr-32 py-4 text-white placeholder-gray-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all font-mono"
+                                        placeholder="UCOL-100-1234"
+                                    />
+                                    <button
+                                        onClick={handleAdminRecharge}
+                                        disabled={isAdminProcessing || !adminRechargeCode}
+                                        className="absolute right-2 top-2 bottom-2 bg-[#22c55e] hover:bg-green-600 disabled:bg-gray-700 disabled:text-gray-500 text-black px-6 rounded-2xl font-bold transition-all active:scale-95 shadow-lg shadow-green-900/20"
+                                    >
+                                        {isAdminProcessing ? <Loader2 className="animate-spin" size={18} /> : 'Validar'}
+                                    </button>
                                 </div>
+
+                                {adminFeedback && (
+                                    <div className={`p-4 rounded-3xl border ${adminFeedback.type === 'success' ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/10 border-red-500/30 text-red-400'} flex items-center gap-3 animate-fade-in`}>
+                                        {adminFeedback.type === 'success' ? <Check size={20} /> : <AlertCircle size={20} />}
+                                        <span className="font-bold text-sm">{adminFeedback.msg}</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

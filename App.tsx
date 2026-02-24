@@ -8,7 +8,7 @@ import { MENU_ITEMS as DEFAULT_MENU_ITEMS, CATEGORIES } from './constants';
 import AdminScreen from './components/AdminScreen';
 import RechargeModal from './components/RechargeModal';
 import AvatarModal from './components/AvatarModal';
-import { Category, MenuItem, CartItem, Screen, PickupTime, Order, OrderStatus, User } from './types';
+import { Category, MenuItem, CartItem, Screen, PickupTime, Order, OrderStatus, User, PendingRecharge } from './types';
 // Firebase Imports
 import { db } from './services/firebase';
 
@@ -63,6 +63,7 @@ const App: React.FC = () => {
     const [adminFeedback, setAdminFeedback] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
     const [isAdminProcessing, setIsAdminProcessing] = useState(false);
     const [adminTab, setAdminTab] = useState<'ACTIVE' | 'HISTORY' | 'RECHARGE' | 'MENU'>('ACTIVE');
+    const [pendingRecharges, setPendingRecharges] = useState<PendingRecharge[]>([]);
 
     // Admin Menu Management State
     const [isEditingItem, setIsEditingItem] = useState(false);
@@ -169,6 +170,19 @@ const App: React.FC = () => {
         return () => unsubscribe();
     }, []);
 
+
+    // 4b. Pending Recharges Sync (admin only)
+    useEffect(() => {
+        if (!user || user.email !== 'admin@ucol.mx') return;
+        const unsub = db.collection('recharge_requests')
+            .where('status', '==', 'PENDING')
+            .onSnapshot((snap: any) => {
+                const items: PendingRecharge[] = snap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as PendingRecharge));
+                items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                setPendingRecharges(items);
+            });
+        return () => unsub();
+    }, [user?.email]);
 
     // 4. Orders Sync
     useEffect(() => {
@@ -386,22 +400,38 @@ const App: React.FC = () => {
         } catch (error) { console.error(error); } finally { setIsAdminProcessing(false); }
     };
 
+    const _completeRechargeDoc = async (docId: string, userId: string, amount: number): Promise<void> => {
+        const userRef = db.collection('users').doc(userId);
+        const userSnap = await userRef.get();
+        if (!userSnap.exists) throw new Error('Usuario no encontrado');
+        await userRef.update({ balance: (userSnap.data()?.balance || 0) + amount });
+        await db.collection('recharge_requests').doc(docId).update({ status: 'COMPLETED', processedAt: Date.now() });
+    };
+
+    // Complete recharge by clicking a pending card
+    const handleCompleteRecharge = async (recharge: PendingRecharge) => {
+        setIsAdminProcessing(true); setAdminFeedback(null);
+        try {
+            await _completeRechargeDoc(recharge.id, recharge.userId, recharge.amount);
+            setAdminFeedback({ type: 'success', msg: `✅ +${recharge.amount} UC acreditados a ${recharge.userName}` });
+        } catch (error) { console.error(error); setAdminFeedback({ type: 'error', msg: 'Error al procesar.' }); }
+        finally { setIsAdminProcessing(false); }
+    };
+
     const handleAdminRecharge = async () => {
         if (!adminRechargeCode.trim()) return;
         setIsAdminProcessing(true); setAdminFeedback(null);
         try {
-            const q = db.collection("recharge_requests").where("code", "==", adminRechargeCode.trim());
+            const q = db.collection('recharge_requests').where('code', '==', adminRechargeCode.trim());
             const querySnapshot = await q.get();
-            if (querySnapshot.empty) { setAdminFeedback({ type: 'error', msg: 'Inválido.' }); setIsAdminProcessing(false); return; }
+            if (querySnapshot.empty) { setAdminFeedback({ type: 'error', msg: 'Código no encontrado.' }); setIsAdminProcessing(false); return; }
             const reqDoc = querySnapshot.docs[0]; const reqData = reqDoc.data();
-            if (reqData.status === 'COMPLETED') { setAdminFeedback({ type: 'error', msg: 'Ya usado.' }); setIsAdminProcessing(false); return; }
-            const userRef = db.collection("users").doc(reqData.userId); const userSnap = await userRef.get();
-            if (userSnap.exists) {
-                await userRef.update({ balance: (userSnap.data()?.balance || 0) + reqData.amount });
-                await db.collection("recharge_requests").doc(reqDoc.id).update({ status: 'COMPLETED', processedAt: Date.now() });
-                setAdminFeedback({ type: 'success', msg: `Recarga exitosa.` }); setAdminRechargeCode('');
-            }
-        } catch (error) { console.error(error); } finally { setIsAdminProcessing(false); }
+            if (reqData.status === 'COMPLETED') { setAdminFeedback({ type: 'error', msg: 'Este código ya fue usado.' }); setIsAdminProcessing(false); return; }
+            await _completeRechargeDoc(reqDoc.id, reqData.userId, reqData.amount);
+            setAdminFeedback({ type: 'success', msg: `✅ +${reqData.amount} UC acreditados a ${reqData.userName}` });
+            setAdminRechargeCode('');
+        } catch (error) { console.error(error); setAdminFeedback({ type: 'error', msg: 'Error de conexión.' }); }
+        finally { setIsAdminProcessing(false); }
     };
 
     // --- Main Logic ---
@@ -544,7 +574,7 @@ const App: React.FC = () => {
                             className="w-full h-full object-contain"
                         />
                     </div>
-                    <h1 className="text-2xl font-bold mb-1">Aperativo</h1>
+                    <h1 className="text-2xl font-bold mb-1">Snack UDC</h1>
                     <p className="text-white/80 text-sm">Cafetería Universidad de Colima</p>
                 </div>
 
@@ -989,7 +1019,7 @@ const App: React.FC = () => {
                                 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Logo_de_la_Universidad_de_Colima.svg/640px-Logo_de_la_Universidad_de_Colima.svg.png" alt="UCol Logo" className="w-full h-full object-contain" />
                             </div>
                             <div className="hidden sm:flex flex-col">
-                                <h1 className="text-lg md:text-xl font-bold text-gray-800 dark:text-white leading-tight tracking-tight">Aperativo</h1>
+                                <h1 className="text-lg md:text-xl font-bold text-gray-800 dark:text-white leading-tight tracking-tight">Snack Udc</h1>
                                 <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 gap-1"><MapPin className="w-3 h-3" /><span>{user.school}</span></div>
                             </div>
                         </div>
@@ -1039,6 +1069,8 @@ const App: React.FC = () => {
                     setEditingItem={setEditingItem}
                     setActiveScreen={setActiveScreen}
                     handleAdminRecharge={handleAdminRecharge}
+                    handleCompleteRecharge={handleCompleteRecharge}
+                    pendingRecharges={pendingRecharges}
                     handleUpdateOrderStatus={handleUpdateOrderStatus}
                     openEditItemModal={openEditItemModal}
                     handleSaveItem={handleSaveItem}
