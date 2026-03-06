@@ -43,15 +43,7 @@ const AIAssistant: React.FC = () => {
 
     return (
         <>
-            {/* Floating Button */}
-            <button
-                onClick={toggleChat}
-                className={`fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 p-4 rounded-full shadow-lg transition-all duration-300 ${
-                    isOpen ? 'bg-red-500 rotate-90 scale-0 opacity-0 hidden' : 'bg-gradient-to-r from-green-600 to-emerald-500 text-white hover:scale-105 animate-bounce-in'
-                }`}
-            >
-                <Sparkles className="w-6 h-6" />
-            </button>
+
 
             {/* Chat Window */}
             {isOpen && (
