@@ -7,7 +7,7 @@ export const MENU_ITEMS: MenuItem[] = [
         description: 'Totopos bañados en salsa roja casera, con crema, queso fresco, cebolla y frijoles.',
         price: 55,
         category: Category.BREAKFAST,
-        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Portada-chilaquiles-rojos.jpg/640px-Portada-chilaquiles-rojos.jpg',
+        image: 'https://media.gettyimages.com/id/1209517276/es/foto/mexican-chilaquiles.jpg?s=1024x1024&w=gi&k=20&c=iFFda3SOL-9WmbdYfOg9fY39msdDRN6aO38MWywLgk4=',
         calories: 600,
         prepTime: 15,
         isPopular: true

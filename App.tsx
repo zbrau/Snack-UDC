@@ -584,24 +584,36 @@ const App: React.FC = () => {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4 font-sans transition-colors w-full">
             <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-3xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700 animate-scale-in">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-green-700 to-emerald-600 p-8 text-center text-white relative">
-                    {/* RESTORED ICON BUTTON FOR AUTH SCREEN */}
-                    <button
-                        onClick={toggleTheme}
-                        className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full backdrop-blur-sm transition-colors text-white"
-                    >
-                        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                    </button>
+                <div className="relative p-8 text-center text-white overflow-hidden" style={{ minHeight: '220px' }}>
+                    {/* Background image */}
+                    <img
+                        src="https://i.ibb.co/LdtGgYNY/Dise-o-sin-t-tulo.png"
+                        alt="Background"
+                        className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    {/* Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-green-900/80 to-emerald-800/90" />
 
-                    <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg p-2 overflow-hidden animate-float">
-                        <img
-                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Logo_de_la_Universidad_de_Colima.svg/640px-Logo_de_la_Universidad_de_Colima.svg.png"
-                            alt="UCol Logo"
-                            className="w-full h-full object-contain"
-                        />
+                    {/* Content */}
+                    <div className="relative z-10">
+                        {/* RESTORED ICON BUTTON FOR AUTH SCREEN */}
+                        <button
+                            onClick={toggleTheme}
+                            className="absolute top-0 right-0 p-2 bg-white/20 hover:bg-white/30 rounded-full backdrop-blur-sm transition-colors text-white"
+                        >
+                            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                        </button>
+
+                        <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg p-2 overflow-hidden animate-float">
+                            <img
+                                src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Logo_de_la_Universidad_de_Colima.svg/640px-Logo_de_la_Universidad_de_Colima.svg.png"
+                                alt="UCol Logo"
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
+                        <h1 className="text-2xl font-bold mb-1">Snack UDC</h1>
+                        <p className="text-white/80 text-sm">Cafetería Universidad de Colima</p>
                     </div>
-                    <h1 className="text-2xl font-bold mb-1">Snack UDC</h1>
-                    <p className="text-white/80 text-sm">Cafetería Universidad de Colima</p>
                 </div>
 
                 {/* Tabs */}
@@ -839,13 +851,15 @@ const App: React.FC = () => {
                 {/* Profile Header */}
                 <div className="flex flex-col items-center">
                     <div className="relative group">
-                        <div className={`w-32 h-32 rounded-full border-4 border-white dark:border-[#1e2330] shadow-2xl flex items-center justify-center text-5xl font-bold text-gray-400 dark:text-white overflow-hidden ${user.avatar ? 'cursor-pointer' : ''}`}
-                            style={{ backgroundColor: user.avatar ? 'transparent' : '#e5e7eb' }}
-                            onClick={() => user.avatar && setIsAvatarZoomed(true)}>
+                        <div className={`w-32 h-32 rounded-full border-4 border-white dark:border-[#1e2330] shadow-2xl flex items-center justify-center text-5xl font-bold text-gray-400 dark:text-white overflow-hidden cursor-pointer`}
+                            style={{ backgroundColor: 'transparent' }}
+                            onClick={() => (user.avatar || user.email === 'admin@ucol.mx') && setIsAvatarZoomed(true)}>
                             {user.avatar ? (
                                 <img src={user.avatar} alt="User Avatar" className="w-full h-full object-cover" />
+                            ) : user.email === 'admin@ucol.mx' ? (
+                                <img src="https://i.ibb.co/LdtGgYNY/Dise-o-sin-t-tulo.png" alt="Admin Avatar" className="w-full h-full object-cover" />
                             ) : (
-                                user.name.charAt(0)
+                                <span style={{ backgroundColor: '#e5e7eb' }} className="w-full h-full flex items-center justify-center">{user.name.charAt(0)}</span>
                             )}
                         </div>
                         <button
