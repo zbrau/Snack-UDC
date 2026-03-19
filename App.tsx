@@ -363,7 +363,8 @@ const App: React.FC = () => {
         setIsAdminProcessing(true);
 
         try {
-            const itemData = { ...editingItem };
+            // Include adminSelectedSchool to bind the product to this campus
+            const itemData = { ...editingItem, school: adminSelectedSchool };
             if (!itemData.id) {
                 // Create
                 const newRef = db.collection("menu_items").doc();
@@ -451,12 +452,16 @@ const App: React.FC = () => {
     // --- Main Logic ---
     const filteredItems = useMemo(() => {
         return menuItems.filter(item => {
+            // Only show items for the user's school, or global items
+            const matchesSchool = !item.school || (user && item.school === user.school);
+            if (!matchesSchool) return false;
+
             const matchesCategory = selectedCategory === Category.ALL || item.category === selectedCategory;
             const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 item.description.toLowerCase().includes(searchQuery.toLowerCase());
             return matchesCategory && matchesSearch;
         });
-    }, [selectedCategory, searchQuery, menuItems]);
+    }, [selectedCategory, searchQuery, menuItems, user]);
 
     const addToCart = (item: MenuItem) => {
         setCartItems(prev => {
@@ -1171,7 +1176,7 @@ const App: React.FC = () => {
                     ) : (
                         <AdminScreen
                             orders={orders.filter(o => o.school === adminSelectedSchool)}
-                            menuItems={menuItems}
+                            menuItems={menuItems.filter(i => !i.school || i.school === adminSelectedSchool)}
                             adminTab={adminTab}
                             setAdminTab={setAdminTab}
                             adminRechargeCode={adminRechargeCode}

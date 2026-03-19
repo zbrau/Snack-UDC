@@ -120,7 +120,10 @@ const AdminScreen: React.FC<AdminScreenProps> = ({
                                         <img src={item.image} alt={item.name} className="w-20 h-20 rounded-2xl object-cover bg-gray-900" />
                                         <div className="flex-1">
                                             <div className="flex justify-between items-start">
-                                                <h4 className="font-bold text-white line-clamp-1">{item.name}</h4>
+                                                <div className="flex flex-col">
+                                                    <h4 className="font-bold text-white line-clamp-1">{item.name}</h4>
+                                                    {!item.school && <span className="text-[10px] text-gray-500 bg-gray-800 px-2 py-0.5 rounded-full w-fit mt-1 border border-gray-700">Global</span>}
+                                                </div>
                                                 <span className="font-bold text-green-500 text-sm whitespace-nowrap">{item.price} UC</span>
                                             </div>
                                             <p className="text-xs text-gray-400 line-clamp-2 mt-1">{item.description}</p>

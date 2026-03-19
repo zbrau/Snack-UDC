@@ -18,6 +18,7 @@ export interface MenuItem {
     calories?: number;
     prepTime: number; // in minutes
     isPopular?: boolean;
+    school?: string;
 }
 
 export interface CartItem extends MenuItem {
