@@ -388,19 +388,44 @@ const AdminScreen: React.FC<AdminScreenProps> = ({
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Variedades u Opciones (separadas por comas)</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Ej. Lomo, Adobada, Pollo"
-                                        value={editingItem.varieties?.join(', ') || ''}
-                                        onChange={e => {
-                                            const val = e.target.value;
-                                            const vList = val.split(',').map(s => s.trim()).filter(Boolean);
-                                            setEditingItem({ ...editingItem, varieties: vList.length > 0 ? vList : [] });
-                                        }}
-                                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 text-sm dark:text-white"
-                                    />
-                                    <p className="text-[10px] text-gray-400 mt-1">Si dejas este campo vacío, el platillo no tendrá opciones.</p>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">Variedades / Opciones (Opcional)</label>
+                                    <div className="space-y-2">
+                                        {(editingItem.varieties || []).map((v, index) => (
+                                            <div key={index} className="flex items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={v}
+                                                    onChange={e => {
+                                                        const newVar = [...(editingItem.varieties || [])];
+                                                        newVar[index] = e.target.value;
+                                                        setEditingItem({ ...editingItem, varieties: newVar });
+                                                    }}
+                                                    placeholder={`Opción ${index + 1} (Ej. Lomo, Pollo...)`}
+                                                    className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 text-sm dark:text-white"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        const newVar = [...(editingItem.varieties || [])];
+                                                        newVar.splice(index, 1);
+                                                        setEditingItem({ ...editingItem, varieties: newVar });
+                                                    }}
+                                                    className="text-red-500 hover:text-red-700 p-2 bg-red-50 dark:bg-red-900/20 rounded-xl transition-colors"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <button
+                                            onClick={() => {
+                                                const newVar = [...(editingItem.varieties || []), ''];
+                                                setEditingItem({ ...editingItem, varieties: newVar });
+                                            }}
+                                            className="w-full py-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-400 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                                        >
+                                            <Plus size={16} /> Añadir una opción
+                                        </button>
+                                    </div>
+                                    <p className="text-[10px] text-gray-400 mt-2">Agrega las diferentes variedades que el estudiante puede elegir.</p>
                                 </div>
                                 <div className="flex items-center gap-2 mt-4">
                                     <input

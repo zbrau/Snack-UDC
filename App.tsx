@@ -365,7 +365,14 @@ const App: React.FC = () => {
 
         try {
             // Use the school property from editingItem (empty means Global, otherwise exclusive)
-            const itemData = { ...editingItem };
+            const itemData: any = { ...editingItem };
+            // Clean up empty varieties
+            if (itemData.varieties) {
+                itemData.varieties = itemData.varieties.filter((v: string) => v.trim() !== '');
+                if (itemData.varieties.length === 0) {
+                    delete itemData.varieties;
+                }
+            }
             if (!itemData.id) {
                 // Create
                 const newRef = db.collection("menu_items").doc();
