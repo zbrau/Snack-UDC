@@ -352,7 +352,8 @@ const App: React.FC = () => {
                 image: '',
                 calories: 0,
                 prepTime: 5,
-                isPopular: false
+                isPopular: false,
+                school: adminSelectedSchool
             });
         }
         setIsEditingItem(true);
@@ -363,8 +364,8 @@ const App: React.FC = () => {
         setIsAdminProcessing(true);
 
         try {
-            // Include adminSelectedSchool to bind the product to this campus
-            const itemData = { ...editingItem, school: adminSelectedSchool };
+            // Use the school property from editingItem (empty means Global, otherwise exclusive)
+            const itemData = { ...editingItem };
             if (!itemData.id) {
                 // Create
                 const newRef = db.collection("menu_items").doc();

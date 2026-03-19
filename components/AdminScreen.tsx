@@ -396,6 +396,35 @@ const AdminScreen: React.FC<AdminScreenProps> = ({
                                     />
                                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Marcar como Popular</label>
                                 </div>
+                                
+                                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-3">Visibilidad del Platillo</label>
+                                    <div className="flex flex-col gap-3">
+                                        <label className="flex items-center gap-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors">
+                                            <input 
+                                                type="radio" 
+                                                name="visibility" 
+                                                checked={editingItem.school === adminSelectedSchool} 
+                                                onChange={() => setEditingItem({ ...editingItem, school: adminSelectedSchool })}
+                                                className="w-4 h-4 text-green-600 focus:ring-green-500 border-gray-300"
+                                            />
+                                            <span>Exclusivo para <strong>{adminSelectedSchool}</strong></span>
+                                        </label>
+                                        <label className="flex items-center gap-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors">
+                                            <input 
+                                                type="radio" 
+                                                name="visibility" 
+                                                checked={!editingItem.school} 
+                                                onChange={() => setEditingItem({ ...editingItem, school: '' })}
+                                                className="w-4 h-4 text-green-600 focus:ring-green-500 border-gray-300"
+                                            />
+                                            <div>
+                                                <span>Global </span>
+                                                <span className="text-xs text-gray-500 font-normal">(Visible en todos los planteles)</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="mt-6 flex gap-3">
