@@ -101,7 +101,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, loyaltyPoints, onUp
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-950 transition-colors">
+                <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4 bg-gray-50 dark:bg-gray-950 transition-colors">
                     {items.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-600 space-y-4">
                             <ShoppingBag className="w-16 h-16 opacity-20" />

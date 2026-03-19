@@ -165,7 +165,15 @@ const AdminScreen: React.FC<AdminScreenProps> = ({
                                     </div>
                                 </div>
                                 <div className="p-5 flex-1 space-y-2">
-                                    {order.items.map((i, idx) => <div key={idx} className="flex gap-2 text-sm text-gray-300"><span className="font-bold text-white">{i.quantity}x</span> <span>{i.name}</span></div>)}
+                                    {order.items.map((i, idx) => (
+                                        <div key={idx} className="flex gap-2 text-sm text-gray-300">
+                                            <span className="font-bold text-white">{i.quantity}x</span> 
+                                            <span>
+                                                {i.name}
+                                                {i.selectedVariety && <span className="text-[11px] text-gray-500 italic ml-1">({i.selectedVariety})</span>}
+                                            </span>
+                                        </div>
+                                    ))}
                                 </div>
                                 <div className="p-4 bg-[#13161f] border-t border-gray-800 flex flex-col gap-2">
                                     {order.status === OrderStatus.PENDING && <button onClick={() => handleUpdateOrderStatus(order.id, OrderStatus.READY)} className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition-colors">Marcar Listo</button>}
@@ -308,7 +316,7 @@ const AdminScreen: React.FC<AdminScreenProps> = ({
                 isEditingItem && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsEditingItem(false)} />
-                        <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-lg relative z-10 shadow-2xl overflow-y-auto max-h-[90vh] animate-scale-in">
+                        <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-lg relative z-10 shadow-2xl overflow-y-auto no-scrollbar max-h-[90vh] animate-scale-in">
                             <h3 className="font-bold text-xl mb-4 text-gray-800 dark:text-white">{editingItem.id ? 'Editar Platillo' : 'Nuevo Platillo'}</h3>
 
                             <div className="space-y-4">
