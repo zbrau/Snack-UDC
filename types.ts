@@ -1,0 +1,93 @@
+
+export enum Category {
+    ALL = 'Todos',
+    BREAKFAST = 'Desayuno',
+    LUNCH = 'Comida',
+    SNACKS = 'Snacks',
+    DRINKS = 'Bebidas',
+    HEALTHY = 'Saludable'
+}
+
+export interface MenuItem {
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    category: Category;
+    image: string;
+    calories?: number;
+    prepTime: number; // in minutes
+    isPopular?: boolean;
+    school?: string;
+    varieties?: string[];
+}
+
+export interface CartItem extends MenuItem {
+    quantity: number;
+    note?: string;
+    selectedVariety?: string;
+}
+
+export enum OrderStatus {
+    PENDING = 'Pendiente',
+    PREPARING = 'Preparando',
+    READY = 'Listo',
+    COMPLETED = 'Entregado'
+}
+
+export enum PickupTime {
+    NOW = 'Lo antes posible',
+    RECESS = 'Recreo (9:30 AM)',
+    CUSTOM = 'Hora Personalizada'
+}
+
+export interface Order {
+    id: string;
+    items: CartItem[];
+    total: number;        // Final amount paid by user
+    subtotal?: number;    // Total value of items before discount
+    discount?: number;    // Amount discounted
+    pointsEarned?: number;
+    pointsRedeemed?: number;
+    status: OrderStatus;
+    date: string;
+    pickupTime: string; // Changed to string to support custom times
+    userId?: string;
+    userName?: string; // Name of the user who placed the order
+    pickupCode?: string; // New field for the "Direct Pickup" code
+    paymentMethod?: 'CASH' | 'COINS'; // New field for payment type
+    school?: string; // Bachillerato associated with the order (where food will be prepared)
+    userSchool?: string; // Bachillerato of the student who placed the order
+}
+
+export type Screen = 'HOME' | 'MENU' | 'CART' | 'PROFILE' | 'ORDERS' | 'ADMIN_PANEL';
+
+export interface ChatMessage {
+    role: 'user' | 'model';
+    text: string;
+    isError?: boolean;
+}
+
+export interface User {
+    name: string;
+    email: string;
+    school: string; // Bachillerato
+    grade: string;
+    group: string;
+    balance: number;
+    loyaltyPoints?: number; // Points accumulated for free meal
+    avatar?: string; // Avatar URL or emoji
+    favorites?: string[]; // Favorited menu item IDs
+}
+
+export interface PendingRecharge {
+    id: string; // Firestore document ID
+    code: string;
+    amount: number;
+    userId: string;
+    userName: string;
+    status: 'PENDING' | 'COMPLETED';
+    createdAt: string;
+    processedAt?: number;
+    school?: string; // Bachillerato associated with the request
+}
