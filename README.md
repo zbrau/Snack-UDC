@@ -113,13 +113,12 @@ npm run dev
 npm run build
 ```
 
-> La carpeta `dist/` generada por el build es la que se sube a producción.
 
 ---
 
 ## 🌐 Despliegue
 
-El proyecto está configurado para **Vercel**. Ajustes recomendados:
+El proyecto está configurado para **Vercel**.
 
 | Campo | Valor |
 |---|---|
@@ -131,7 +130,7 @@ El proyecto está configurado para **Vercel**. Ajustes recomendados:
 
 ## 🔑 Variables de Entorno
 
-La configuración de Firebase está embebida en el código. Si deseas externalizar las claves, crea un `.env`:
+
 
 ```
 VITE_FIREBASE_API_KEY=...
