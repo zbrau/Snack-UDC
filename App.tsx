@@ -11,6 +11,7 @@ import { ToastProvider, useToast } from './components/ToastProvider';
 import { FoodItemSkeleton, OrderSkeleton } from './components/Skeleton';
 import HelpModal from './components/HelpModal';
 import RechargeHistory from './components/RechargeHistory';
+import CreditsModal from './components/CreditsModal';
 import { Category, MenuItem, CartItem, Screen, PickupTime, Order, OrderStatus, User, PendingRecharge } from './types';
 // Firebase Imports
 import { db } from './services/firebase';
@@ -83,6 +84,7 @@ const App: React.FC = () => {
     const [showHelpModal, setShowHelpModal] = useState(false);
     const [showRechargeHistory, setShowRechargeHistory] = useState(false);
     const [showAIChat, setShowAIChat] = useState(false);
+    const [showCreditsModal, setShowCreditsModal] = useState(false);
 
     // Toast hook
     const toast = useToast();
@@ -1047,18 +1049,18 @@ const App: React.FC = () => {
                     </div>
 
                     {/* Developer Credits */}
-                    <a href="https://github.com/zbrau" target="_blank" rel="noopener noreferrer" className="w-full bg-[#18181b] hover:bg-[#27272a] p-4 rounded-xl border border-gray-800 flex items-center justify-between group transition-all shadow-sm">
+                    <button onClick={() => setShowCreditsModal(true)} className="w-full bg-[#18181b] hover:bg-[#27272a] p-4 rounded-xl border border-gray-800 flex items-center justify-between group transition-all shadow-sm">
                         <div className="flex items-center gap-4">
                             <div className="bg-[#27272a] group-hover:bg-[#3f3f46] p-2.5 rounded-lg text-white transition-colors">
                                 <Github size={20} />
                             </div>
                             <div className="text-left">
                                 <h4 className="font-bold text-white text-sm">Programador: Braulio</h4>
-                                <p className="text-gray-400 text-xs mt-0.5">Otros proyectos</p>
+                                <p className="text-gray-400 text-xs mt-0.5">Ver mis proyectos</p>
                             </div>
                         </div>
                         <ChevronRight className="text-gray-500 group-hover:text-white transition-colors" size={16} />
-                    </a>
+                    </button>
 
                     {/* Logout */}
                     <button onClick={handleLogout} className="w-full bg-red-50 dark:bg-[#1a0f0f] hover:bg-red-100 dark:hover:bg-[#2a1212] p-4 rounded-xl border border-red-200 dark:border-red-900/20 flex items-center justify-center gap-2 text-red-600 dark:text-red-500 font-bold transition-colors mt-6 shadow-sm">
@@ -1321,6 +1323,7 @@ const App: React.FC = () => {
                 handleFinishRecharge={handleFinishRecharge}
                 rechargeCode={rechargeCode}
             />
+            <CreditsModal isOpen={showCreditsModal} onClose={() => setShowCreditsModal(false)} />
             <AvatarModal
                 isAvatarModalOpen={isAvatarModalOpen}
                 setIsAvatarModalOpen={setIsAvatarModalOpen}
