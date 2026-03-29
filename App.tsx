@@ -1,6 +1,5 @@
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Search, Home, Menu as MenuIcon, ShoppingBag, User as UserIcon, Bell, MapPin, Coins, QrCode, Check, X, LogOut, School, BookOpen, Users, ChevronRight, ArrowLeft, Loader2, Moon, Sun, ClipboardList, ShieldCheck, AlertCircle, DollarSign, Gift, Award, Sparkles, Flame, Clock, ChefHat, PackageCheck, History, Trash2, Banknote, Edit3, Plus, Image as ImageIcon, Save, Heart, HelpCircle } from 'lucide-react';
+import { Search, Home, Menu as MenuIcon, ShoppingBag, User as UserIcon, Bell, MapPin, Coins, QrCode, Check, X, LogOut, School, BookOpen, Users, ChevronRight, ArrowLeft, Loader2, Moon, Sun, ClipboardList, ShieldCheck, AlertCircle, DollarSign, Gift, Award, Sparkles, Flame, Clock, ChefHat, PackageCheck, History, Trash2, Banknote, Edit3, Plus, Image as ImageIcon, Save, Heart, HelpCircle, Github } from 'lucide-react';
 import FoodItem from './components/FoodItem';
 import Cart from './components/Cart';
 import AIAssistant from './components/AIAssistant';
@@ -1046,6 +1045,20 @@ const App: React.FC = () => {
                             <ChevronRight className="text-gray-400 dark:text-gray-600 group-hover:text-gray-600 dark:group-hover:text-white transition-colors" size={16} />
                         </button>
                     </div>
+
+                    {/* Developer Credits */}
+                    <a href="https://github.com/zbrau" target="_blank" rel="noopener noreferrer" className="w-full bg-[#18181b] hover:bg-[#27272a] p-4 rounded-xl border border-gray-800 flex items-center justify-between group transition-all shadow-sm">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-[#27272a] group-hover:bg-[#3f3f46] p-2.5 rounded-lg text-white transition-colors">
+                                <Github size={20} />
+                            </div>
+                            <div className="text-left">
+                                <h4 className="font-bold text-white text-sm">Programador: Braulio</h4>
+                                <p className="text-gray-400 text-xs mt-0.5">Otros proyectos</p>
+                            </div>
+                        </div>
+                        <ChevronRight className="text-gray-500 group-hover:text-white transition-colors" size={16} />
+                    </a>
 
                     {/* Logout */}
                     <button onClick={handleLogout} className="w-full bg-red-50 dark:bg-[#1a0f0f] hover:bg-red-100 dark:hover:bg-[#2a1212] p-4 rounded-xl border border-red-200 dark:border-red-900/20 flex items-center justify-center gap-2 text-red-600 dark:text-red-500 font-bold transition-colors mt-6 shadow-sm">
