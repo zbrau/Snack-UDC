@@ -1,81 +1,80 @@
-# - Snack UDC
+# Snack UDC
 
-Aplicación web de pedidos para la cafetería de la Universidad de Colima (UDC). Permite a los alumnos pedir comida desde su dispositivo, pagar con saldo virtual y recibir su pedido sin hacer fila.
+A web-based ordering app for the cafeteria of the Universidad de Colima (UDC). Students can order food from their device, pay with virtual balance, and pick up their order without waiting in line.
 
 ---
 
-## - Stack Tecnológico
+## Tech Stack
 
-| Tecnología | Uso |
+| Technology | Purpose |
 |---|---|
-| **React 19 + TypeScript** | Framework principal |
-| **Vite** | Bundler y dev server |
-| **Firebase / Firestore** | Base de datos en tiempo real y autenticación |
-| **Tailwind CSS** | Estilos (via CDN en dev, Vite build en prod) |
-| **Lucide React** | Iconografía |
-
-
----
-
-## -- Funcionalidades
-
-### - Para el usuario
-- **Autenticación** — Registro e inicio de sesión con selección de bachillerato
-- **Menú** — Explorar platillos por categoría (Desayuno, Comida, Snacks, Bebidas, Saludable) con buscador en tiempo real
-- **Variantes** — Elegir la variante de un platillo antes de agregar al carrito
-- **Notas por ítem** — Instrucciones especiales por platillo (ej. "sin cebolla")
-- **Carrito** — Gestión de pedido con hora de recojo (ahorita, recreo o personalizada)
-- **Pago dual** — Pagar con **Ucol Coins** (saldo virtual) o en **efectivo** al recoger
-- **Pedidos de otros bachilleratos** — Ver y ordenar desde el menú de cualquier plantel
-- **Seguimiento de pedido** — Pantalla de pedidos activos con código de recojo y estado en tiempo real
-- **Historial** — Revisar pedidos anteriores con detalle de ítems
-- **Rewards** — Sistema de puntos de lealtad; acumula 200 pts y obtiene `-100 UC` de descuento
-- **Recargas** — Solicitar recarga de Ucol Coins mediante código
-- **Favoritos** — Marcar platillos favoritos para acceso rápido
-- **Perfil** — Avatar personalizable, historial de recargas, info de cuenta
-- **Modo oscuro/claro** — Toggle de tema persistente
-- **PWA** — Instalable en móvil como app nativa
-
-### -- Para el administrador
-- **Selección de plantel** — El admin elige qué bachillerato gestionar
-- **Pedidos activos** — Vista tipo cocina con tarjetas en tiempo real; marcar como Listo o Entregado
-- **Nombre del cliente** — Cada pedido muestra el nombre de quien pidió y su plantel de origen
-- **Historial** — Tabla de todos los pedidos completados o cancelados
-- **Recargas** — Aprobar solicitudes de recarga de saldo con código
-- **Gestión de menú** — Crear, editar y eliminar platillos (nombre, precio, categoría, imagen, variantes)
-- **📊 Estadísticas** — Dashboard con:
-  - Pedidos del día y entregados
-  - Ingresos totales del día
-  - Desglose por método de pago (Coins vs Efectivo)
-  - Top 5 platillos más pedidos (barras de progreso)
-  - Estado de pedidos del día (Pendientes / Listos / Entregados)
+| **React 19 + TypeScript** | Main framework |
+| **Vite** | Bundler and dev server |
+| **Firebase / Firestore** | Real-time database and authentication |
+| **Tailwind CSS** | Styling (via CDN in dev, Vite build in prod) |
+| **Lucide React** | Icons |
 
 ---
 
-##  Estructura del Proyecto
+## Features
+
+### For the user
+- **Authentication** — Sign up and log in with campus selection
+- **Menu** — Browse dishes by category (Breakfast, Lunch, Snacks, Drinks, Healthy) with real-time search
+- **Variants** — Choose a dish variant before adding to cart
+- **Item notes** — Special instructions per dish (e.g. "no onions")
+- **Cart** — Order management with pickup time (now, break, or custom)
+- **Dual payment** — Pay with **Ucol Coins** (virtual balance) or **cash** on pickup
+- **Cross-campus orders** — Browse and order from any campus menu
+- **Order tracking** — Active orders screen with pickup code and real-time status
+- **History** — Review past orders with item details
+- **Rewards** — Loyalty points system; earn 200 pts and get `-100 UC` discount
+- **Recharges** — Request Ucol Coins top-up via code
+- **Favorites** — Mark favorite dishes for quick access
+- **Profile** — Customizable avatar, recharge history, account info
+- **Dark/light mode** — Persistent theme toggle
+- **PWA** — Installable on mobile as a native app
+
+### For the administrator
+- **Campus selection** — Admin chooses which campus to manage
+- **Active orders** — Kitchen-style view with real-time cards; mark as Ready or Delivered
+- **Customer name** — Each order shows who placed it and their home campus
+- **History** — Table of all completed or cancelled orders
+- **Recharges** — Approve balance top-up requests by code
+- **Menu management** — Create, edit, and delete dishes (name, price, category, image, variants)
+- **Statistics** — Dashboard with:
+  - Orders of the day and delivered count
+  - Total daily revenue
+  - Breakdown by payment method (Coins vs Cash)
+  - Top 5 most-ordered dishes (progress bars)
+  - Order status for the day (Pending / Ready / Delivered)
+
+---
+
+## Project Structure
 
 ```
 apera2.0/
-├── App.tsx                  # Componente raíz — estado global, lógica de negocio y routing
-├── types.ts                 # Tipos TypeScript (MenuItem, Order, CartItem, etc.)
-├── constants.ts             # Datos iniciales del menú y lista de bachilleratos
+├── App.tsx                  # Root component — global state, business logic, and routing
+├── types.ts                 # TypeScript types (MenuItem, Order, CartItem, etc.)
+├── constants.ts             # Initial menu data and campus list
 ├── index.tsx                # Entry point
-├── index.html               # HTML base con meta PWA
+├── index.html               # Base HTML with PWA meta
 ├── components/
-│   ├── AdminScreen.tsx      # Panel de administración completo
-│   ├── Cart.tsx             # Carrito lateral con notas y checkout
-│   ├── FoodItem.tsx         # Tarjeta de platillo con variantes y favoritos
-│   ├── AIAssistant.tsx      # Asistente de IA (Google GenAI)
-│   ├── RechargeModal.tsx    # Modal de solicitud de recarga
-│   ├── HelpModal.tsx        # Modal de ayuda y soporte
-│   └── RechargeHistory.tsx  # Historial de recargas del usuario
+│   ├── AdminScreen.tsx      # Full admin panel
+│   ├── Cart.tsx             # Side cart with notes and checkout
+│   ├── FoodItem.tsx         # Dish card with variants and favorites
+│   ├── AIAssistant.tsx      # AI assistant (Google GenAI)
+│   ├── RechargeModal.tsx    # Recharge request modal
+│   ├── HelpModal.tsx        # Help and support modal
+│   └── RechargeHistory.tsx  # User recharge history
 ├── vite.config.ts
 └── package.json
 ```
 
 ---
 
-##  Modelo de Datos (Firestore)
+## Data Model (Firestore)
 
 ### `users/{email}`
 ```ts
@@ -100,27 +99,26 @@ apera2.0/
 
 ---
 
-##  Instalación y Desarrollo
+## Installation and Development
 
 ```bash
-# Instalar dependencias
+# Install dependencies
 npm install
 
-# Servidor de desarrollo
+# Development server
 npm run dev
 
-# Build de producción
+# Production build
 npm run build
 ```
 
-
 ---
 
-##  Despliegue
+## Deployment
 
-El proyecto está configurado para **Vercel**.
+The project is configured for **Vercel**.
 
-| Campo | Valor |
+| Field | Value |
 |---|---|
 | Build Command | `npm run build` |
 | Output Directory | `dist` |
@@ -128,9 +126,7 @@ El proyecto está configurado para **Vercel**.
 
 ---
 
-##  Variables de Entorno
-
-
+## Environment Variables
 
 ```
 VITE_FIREBASE_API_KEY=...
@@ -140,6 +136,6 @@ VITE_GEMINI_API_KEY=...
 
 ---
 
-## 📱 Bachilleratos Soportados
+## Supported Campuses
 
-La aplicación cubre todos los planteles de la **Universidad de Colima** organizados por campus, configurados en `constants.ts`.
+The app covers all campuses of the **Universidad de Colima** organized by location, configured in `constants.ts`.
