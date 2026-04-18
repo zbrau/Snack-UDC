@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Search, Home, Menu as MenuIcon, ShoppingBag, User as UserIcon, Bell, MapPin, Coins, QrCode, Check, X, LogOut, School, BookOpen, Users, ChevronRight, ArrowLeft, Loader2, Moon, Sun, ClipboardList, ShieldCheck, AlertCircle, DollarSign, Gift, Award, Sparkles, Flame, Clock, ChefHat, PackageCheck, History, Trash2, Banknote, Edit3, Plus, Image as ImageIcon, Save, Heart, HelpCircle, Github } from 'lucide-react';
+import { Search, Home, Menu as MenuIcon, ShoppingBag, User as UserIcon, Bell, MapPin, Coins, QrCode, Check, X, LogOut, School, BookOpen, Users, ChevronRight, ArrowLeft, Loader2, Moon, Sun, ClipboardList, ShieldCheck, AlertCircle, DollarSign, Gift, Award, Sparkles, Flame, Clock, ChefHat, PackageCheck, History, Trash2, Banknote, Edit3, Plus, Image as ImageIcon, Save, Heart, HelpCircle, Github, Mail } from 'lucide-react';
 import FoodItem from './components/FoodItem';
 import Cart from './components/Cart';
 import AIAssistant from './components/AIAssistant';
@@ -14,7 +14,7 @@ import RechargeHistory from './components/RechargeHistory';
 import CreditsModal from './components/CreditsModal';
 import { Category, MenuItem, CartItem, Screen, PickupTime, Order, OrderStatus, User, PendingRecharge } from './types';
 // Firebase Imports
-import { db } from './services/firebase';
+import { db, auth, googleProvider } from './services/firebase';
 
 const App: React.FC = () => {
     // --- Authentication State ---
@@ -101,6 +101,7 @@ const App: React.FC = () => {
     const [regGroup, setRegGroup] = useState('');
     const [authError, setAuthError] = useState('');
     const [isAuthLoading, setIsAuthLoading] = useState(false);
+    const [needsVerification, setNeedsVerification] = useState(false);
 
     // 0. Efecto de Tema
     useEffect(() => {
@@ -116,40 +117,52 @@ const App: React.FC = () => {
         setTheme(prev => prev === 'light' ? 'dark' : 'light');
     };
 
-    // 1. Efecto de inicialización Session
+    // 1. Efecto de inicialización Session con Firebase Auth
     useEffect(() => {
-        const checkSession = async () => {
-            const activeEmail = localStorage.getItem('activeSessionEmail');
-
-            if (!activeEmail) {
+        const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+            if (!firebaseUser) {
+                // Si no hay usuario en Firebase, revisamos si era el admin hardcoded
+                const activeEmail = localStorage.getItem('activeSessionEmail');
+                if (activeEmail === 'admin@ucol.mx') {
+                    const adminAvatar = localStorage.getItem('adminAvatar');
+                    setUser({ ...ADMIN_USER, avatar: adminAvatar || undefined });
+                } else {
+                    setUser(null);
+                    localStorage.removeItem('activeSessionEmail');
+                }
                 setIsLoadingUser(false);
                 return;
             }
 
-            if (activeEmail === 'admin@ucol.mx') {
-                const adminAvatar = localStorage.getItem('adminAvatar');
-                setUser({ ...ADMIN_USER, avatar: adminAvatar || undefined });
+            // Si hay usuario, verificamos si su correo está validado
+            if (!firebaseUser.emailVerified) {
+                setNeedsVerification(true);
+                setUser(null);
                 setIsLoadingUser(false);
                 return;
             }
 
             try {
-                const docRef = db.collection("users").doc(activeEmail);
+                const email = firebaseUser.email || '';
+                const docRef = db.collection("users").doc(email);
                 const docSnap = await docRef.get();
 
                 if (docSnap.exists) {
                     setUser(docSnap.data() as User);
+                    setNeedsVerification(false);
                 } else {
-                    localStorage.removeItem('activeSessionEmail');
+                    // El usuario existe en Auth pero no en Firestore (raro, pero posible)
+                    auth.signOut();
+                    setUser(null);
                 }
             } catch (error) {
-                console.error("Error recuperando sesión:", error);
+                console.error("Error recuperando perfil de Firestore:", error);
             } finally {
                 setIsLoadingUser(false);
             }
-        };
+        });
 
-        checkSession();
+        return () => unsubscribe();
     }, []);
 
     // 2. User Sync
@@ -246,32 +259,85 @@ const App: React.FC = () => {
             setIsAuthLoading(false);
             return;
         }
-        // ... (rest of auth logic same as before)
+
         if (!loginEmail.endsWith('@ucol.mx')) {
             setAuthError('El correo debe terminar en @ucol.mx');
+            setIsAuthLoading(true);
             setIsAuthLoading(false);
             return;
         }
 
         try {
-            const docRef = db.collection("users").doc(loginEmail);
+            const userCredential = await auth.signInWithEmailAndPassword(loginEmail, loginPass);
+            const fbUser = userCredential.user;
+
+            if (fbUser && !fbUser.emailVerified) {
+                setNeedsVerification(true);
+                setAuthError('Tu correo no ha sido verificado. Por favor revisa tu bandeja de entrada.');
+                await auth.signOut();
+            }
+            // onAuthStateChanged will handle the rest if verified
+        } catch (err: any) {
+            console.error(err);
+            if (err.code === 'auth/user-not-found') setAuthError('No existe cuenta con este correo.');
+            else if (err.code === 'auth/wrong-password') setAuthError('Contraseña incorrecta.');
+            else setAuthError('Error al iniciar sesión. Verifica tus datos.');
+        } finally {
+            setIsAuthLoading(false);
+        }
+    };
+
+    // --- Google Sign-In ---
+    const handleGoogleLogin = async () => {
+        setAuthError('');
+        setIsAuthLoading(true);
+        try {
+            const result = await auth.signInWithPopup(googleProvider);
+            const fbUser = result.user;
+
+            if (!fbUser || !fbUser.email) {
+                setAuthError('No se pudo obtener el correo de Google.');
+                await auth.signOut();
+                return;
+            }
+
+            // Verificar dominio @ucol.mx
+            if (!fbUser.email.endsWith('@ucol.mx')) {
+                setAuthError('Solo se permiten cuentas institucionales @ucol.mx.');
+                await auth.signOut();
+                return;
+            }
+
+            // Verificar si ya tiene perfil en Firestore
+            const docRef = db.collection('users').doc(fbUser.email);
             const docSnap = await docRef.get();
 
-            if (docSnap.exists) {
-                const userData = docSnap.data();
-                if (userData && userData.password === loginPass) {
-                    const loggedUser = userData as User;
-                    setUser(loggedUser);
-                    localStorage.setItem('activeSessionEmail', loginEmail);
-                } else {
-                    setAuthError('Contraseña incorrecta.');
-                }
-            } else {
-                setAuthError('No existe cuenta con este correo.');
+            if (!docSnap.exists) {
+                // Primera vez: es nuevo alumno, necesita completar su perfil
+                // Guardamos datos básicos de Google y pediremos bachillerato después
+                const newUser: any = {
+                    name: fbUser.displayName || '',
+                    email: fbUser.email,
+                    avatar: fbUser.photoURL || '',
+                    school: '',   // se llenará en el perfil
+                    grade: '',
+                    group: '',
+                    balance: 50,
+                    loyaltyPoints: 0,
+                    createdAt: new Date().toISOString()
+                };
+                await docRef.set(newUser);
             }
-        } catch (err) {
+            // onAuthStateChanged se encargará de cargar el usuario
+        } catch (err: any) {
             console.error(err);
-            setAuthError('Error de conexión. Intenta de nuevo.');
+            if (err.code === 'auth/popup-closed-by-user') {
+                // user closed popup, no error msg
+            } else if (err.code === 'auth/cancelled-popup-request') {
+                // ignore
+            } else {
+                setAuthError('Error al iniciar sesión con Google. Intenta de nuevo.');
+            }
         } finally {
             setIsAuthLoading(false);
         }
@@ -295,51 +361,77 @@ const App: React.FC = () => {
         }
 
         try {
-            const docRef = db.collection("users").doc(regEmail);
-            const docSnap = await docRef.get();
+            // 1. Crear usuario en Auth
+            const userCredential = await auth.createUserWithEmailAndPassword(regEmail, regPass);
+            const fbUser = userCredential.user;
 
-            if (docSnap.exists) {
-                setAuthError('Este usuario ya está registrado.');
-                setIsAuthLoading(false);
-                return;
+            if (fbUser) {
+                // 2. Enviar correo de verificación
+                await fbUser.sendEmailVerification();
+
+                // 3. Crear perfil en Firestore (sin guardar contraseña)
+                const newUser: any = {
+                    name: regName,
+                    email: regEmail,
+                    school: regSchool,
+                    grade: regGrade,
+                    group: regGroup,
+                    balance: 50,
+                    loyaltyPoints: 0,
+                    createdAt: new Date().toISOString()
+                };
+
+                await db.collection("users").doc(regEmail).set(newUser);
+                
+                toast.success('¡Registro exitoso! Te hemos enviado un correo de verificación a ' + regEmail);
+                setAuthMode('LOGIN');
+                setLoginEmail(regEmail);
+                setRegName(''); setRegEmail(''); setRegPass(''); setRegSchool(''); setRegGrade(''); setRegGroup('');
+                setNeedsVerification(true);
             }
 
-            const newUser: any = {
-                name: regName,
-                email: regEmail,
-                school: regSchool,
-                grade: regGrade,
-                group: regGroup,
-                balance: 50,
-                loyaltyPoints: 0,
-                password: regPass
-            };
-
-            await db.collection("users").doc(regEmail).set(newUser);
-            toast.success('¡Registro exitoso! Por favor inicia sesión.');
-            setAuthMode('LOGIN');
-            setLoginEmail(regEmail);
-            setRegName(''); setRegEmail(''); setRegPass(''); setRegSchool(''); setRegGrade(''); setRegGroup('');
-
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error al registrar:", error);
-            setAuthError('Error guardando datos en la nube.');
+            if (error.code === 'auth/email-already-in-use') setAuthError('Este correo ya está registrado.');
+            else setAuthError('Error al crear la cuenta. Intenta de nuevo.');
         } finally {
             setIsAuthLoading(false);
         }
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem('activeSessionEmail');
-        setUser(null);
-        setCartItems([]);
-        setOrders([]);
-        setActiveScreen('HOME');
-        setLoginPass('');
-        setRegPass('');
-        setLoginEmail('');
-        setAdminSelectedSchool('');
-        setSelectedMenuSchool('');
+    const handleLogout = async () => {
+        try {
+            await auth.signOut();
+            localStorage.removeItem('activeSessionEmail');
+            setUser(null);
+            setCartItems([]);
+            setOrders([]);
+            setActiveScreen('HOME');
+            setLoginPass('');
+            setRegPass('');
+            setLoginEmail('');
+            setAdminSelectedSchool('');
+            setSelectedMenuSchool('');
+            setNeedsVerification(false);
+        } catch (error) {
+            console.error("Error logging out:", error);
+        }
+    };
+
+    const handleResendVerification = async () => {
+        setIsAuthLoading(true);
+        try {
+            // Para reenviar, a veces es necesario que el usuario haya iniciado sesión recientemente pero en este caso 
+            // como NeedsVerification bloquea el login, podemos usar el flow de Firebase que envia al email ingresado si existe
+            // Pero Firebase Auth requiere un objeto User actual.
+            // Una opción es iniciar sesión temporalmente para enviar el correo si las credenciales son válidas.
+            // Por simplicidad, avisamos al usuario que revise su bandeja o intente iniciar sesión de nuevo para forzar el flujo.
+            toast.success('Si tu correo no está verificado, intenta iniciar sesión de nuevo para recibir el enlace.');
+        } catch (error) {
+            toast.error('Error al enviar el correo.');
+        } finally {
+            setIsAuthLoading(false);
+        }
     };
 
     // --- Admin Menu Logic ---
@@ -616,38 +708,31 @@ const App: React.FC = () => {
 
     // --- Render Auth ---
     if (!user) return (
-        // ... (Same Auth Code from previous version) ...
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4 font-sans transition-colors w-full">
             <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-3xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700 animate-scale-in">
                 {/* Header */}
-                <div className="relative p-8 text-center text-white overflow-hidden" style={{ minHeight: '220px' }}>
-                    {/* Background image */}
+                <div className="relative text-center text-white overflow-hidden" style={{ minHeight: '200px' }}>
                     <img
                         src="https://i.ibb.co/LdtGgYNY/Dise-o-sin-t-tulo.png"
                         alt="Background"
                         className="absolute inset-0 w-full h-full object-cover"
                     />
-                    {/* Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-b from-green-900/80 to-emerald-800/90" />
-
-                    {/* Content */}
-                    <div className="relative z-10">
-                        {/* RESTORED ICON BUTTON FOR AUTH SCREEN */}
+                    <div className="relative z-10 pt-8 pb-6">
                         <button
                             onClick={toggleTheme}
-                            className="absolute top-0 right-0 p-2 bg-white/20 hover:bg-white/30 rounded-full backdrop-blur-sm transition-colors text-white"
+                            className="absolute top-3 right-3 p-2 bg-white/20 hover:bg-white/30 rounded-full backdrop-blur-sm transition-colors text-white"
                         >
                             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
                         </button>
-
-                        <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg overflow-hidden animate-float border-4 border-white/30">
+                        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg overflow-hidden animate-float border-4 border-white/30">
                             <img
                                 src="https://i.ibb.co/LdtGgYNY/Dise-o-sin-t-tulo.png"
                                 alt="Snack UDC Logo"
                                 className="w-full h-full object-cover"
                             />
                         </div>
-                        <h1 className="text-2xl font-bold mb-1">Snack UDC</h1>
+                        <h1 className="text-2xl font-bold mb-0.5">Snack UDC</h1>
                         <p className="text-white/80 text-sm">Cafetería Universidad de Colima</p>
                     </div>
                 </div>
@@ -655,63 +740,103 @@ const App: React.FC = () => {
                 {/* Tabs */}
                 <div className="flex border-b border-gray-100 dark:border-gray-700">
                     <button
-                        onClick={() => setAuthMode('LOGIN')}
-                        className={`flex-1 py-4 text-sm font-bold transition-colors ${authMode === 'LOGIN' ? 'text-green-700 dark:text-green-400 border-b-2 border-green-700 dark:border-green-400' : 'text-gray-400 dark:text-gray-500'}`}
+                        onClick={() => { setAuthMode('LOGIN'); setAuthError(''); setNeedsVerification(false); }}
+                        className={`flex-1 py-3.5 text-sm font-bold transition-colors ${authMode === 'LOGIN' ? 'text-green-700 dark:text-green-400 border-b-2 border-green-700 dark:border-green-400' : 'text-gray-400 dark:text-gray-500'}`}
                     >
                         Iniciar Sesión
                     </button>
                     <button
-                        onClick={() => setAuthMode('REGISTER')}
-                        className={`flex-1 py-4 text-sm font-bold transition-colors ${authMode === 'REGISTER' ? 'text-green-700 dark:text-green-400 border-b-2 border-green-700 dark:border-green-400' : 'text-gray-400 dark:text-gray-500'}`}
+                        onClick={() => { setAuthMode('REGISTER'); setAuthError(''); setNeedsVerification(false); }}
+                        className={`flex-1 py-3.5 text-sm font-bold transition-colors ${authMode === 'REGISTER' ? 'text-green-700 dark:text-green-400 border-b-2 border-green-700 dark:border-green-400' : 'text-gray-400 dark:text-gray-500'}`}
                     >
                         Crear Cuenta
                     </button>
                 </div>
 
                 {/* Form Area */}
-                <div className="p-8 bg-white dark:bg-gray-800 transition-colors">
+                <div className="p-6 bg-white dark:bg-gray-800 transition-colors">
+                    {/* Error */}
                     {authError && (
-                        <div className="mb-4 bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-300 text-xs p-3 rounded-lg flex items-center gap-2 animate-bounce-in">
-                            <X size={14} />
+                        <div className="mb-4 bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-300 text-xs p-3 rounded-lg flex items-center gap-2">
+                            <AlertCircle size={14} className="shrink-0" />
                             {authError}
                         </div>
                     )}
 
+                    {/* Verification notice */}
+                    {needsVerification && !authError && (
+                        <div className="mb-4 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-xs p-3 rounded-lg flex flex-col gap-2 border border-amber-200 dark:border-amber-800/40">
+                            <div className="flex items-center gap-2 font-bold">
+                                <Mail className="w-4 h-4" /> ¡Verifica tu correo!
+                            </div>
+                            <p>Te enviamos un enlace a <strong>{loginEmail || regEmail}</strong>. Haz clic en él para activar tu cuenta.</p>
+                        </div>
+                    )}
+
                     {authMode === 'LOGIN' ? (
-                        <form onSubmit={handleLogin} className="space-y-4 animate-fade-in">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Correo Institucional</label>
-                                <input type="email" placeholder="estudiante@ucol.mx" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Contraseña</label>
-                                <input type="password" placeholder="••••••••" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={loginPass} onChange={(e) => setLoginPass(e.target.value)} required />
-                            </div>
-                            <button type="submit" disabled={isAuthLoading} className="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-green-200 dark:shadow-none transition mt-4 flex justify-center items-center gap-2 disabled:opacity-70 active:scale-95">
-                                {isAuthLoading && <Loader2 className="w-4 h-4 animate-spin" />} Entrar
+                        <div className="space-y-4 animate-fade-in">
+                            {/* Google Button */}
+                            <button
+                                onClick={handleGoogleLogin}
+                                disabled={isAuthLoading}
+                                className="w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 hover:border-green-400 dark:hover:border-green-500 text-gray-700 dark:text-white font-semibold py-3 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 disabled:opacity-60"
+                            >
+                                {isAuthLoading ? (
+                                    <Loader2 className="w-5 h-5 animate-spin text-green-600" />
+                                ) : (
+                                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+                                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                    </svg>
+                                )}
+                                Entrar con Google (@ucol.mx)
                             </button>
-                        </form>
+
+                            {/* Divider */}
+                            <div className="flex items-center gap-3">
+                                <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+                                <span className="text-xs text-gray-400">o con correo y contraseña</span>
+                                <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+                            </div>
+
+                            {/* Email/Password form */}
+                            <form onSubmit={handleLogin} className="space-y-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Correo Institucional</label>
+                                    <input type="email" placeholder="estudiante@ucol.mx" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Contraseña</label>
+                                    <input type="password" placeholder="••••••••" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={loginPass} onChange={(e) => setLoginPass(e.target.value)} required />
+                                </div>
+                                <button type="submit" disabled={isAuthLoading} className="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-3 rounded-xl shadow-lg shadow-green-200 dark:shadow-none transition flex justify-center items-center gap-2 disabled:opacity-70 active:scale-95">
+                                    {isAuthLoading && <Loader2 className="w-4 h-4 animate-spin" />} Entrar
+                                </button>
+                            </form>
+                        </div>
                     ) : (
-                        <form onSubmit={handleRegister} className="space-y-4 animate-fade-in">
+                        <form onSubmit={handleRegister} className="space-y-3 animate-fade-in">
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Nombre Completo</label>
                                 <div className="relative">
-                                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                    <input type="text" placeholder="Juan Pérez" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-12 pr-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regName} onChange={e => setRegName(e.target.value)} required />
+                                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                    <input type="text" placeholder="Juan Pérez" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-11 pr-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regName} onChange={e => setRegName(e.target.value)} required />
                                 </div>
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Correo Institucional</label>
                                 <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">@</span>
-                                    <input type="email" placeholder="juan@ucol.mx" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-12 pr-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regEmail} onChange={e => setRegEmail(e.target.value)} required />
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">@</span>
+                                    <input type="email" placeholder="juan@ucol.mx" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regEmail} onChange={e => setRegEmail(e.target.value)} required />
                                 </div>
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Contraseña</label>
                                 <div className="relative">
-                                    <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                    <input type="password" placeholder="••••••••" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-12 pr-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regPass} onChange={e => setRegPass(e.target.value)} required />
+                                    <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                    <input type="password" placeholder="••••••••" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-11 pr-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regPass} onChange={e => setRegPass(e.target.value)} required />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
@@ -719,10 +844,10 @@ const App: React.FC = () => {
                                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Bachillerato</label>
                                     <div className="relative">
                                         <School className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 z-10" />
-                                        <select 
-                                            className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-9 pr-3 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" 
-                                            value={regSchool} 
-                                            onChange={e => setRegSchool(e.target.value)} 
+                                        <select
+                                            className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-9 pr-3 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors"
+                                            value={regSchool}
+                                            onChange={e => setRegSchool(e.target.value)}
                                             required
                                         >
                                             <option value="" disabled>Selecciona tu plantel</option>
@@ -741,20 +866,20 @@ const App: React.FC = () => {
                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Grado</label>
                                         <div className="relative">
                                             <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                            <input type="text" placeholder="4°" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-9 pr-3 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regGrade} onChange={e => setRegGrade(e.target.value)} required />
+                                            <input type="text" placeholder="4°" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-9 pr-2 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regGrade} onChange={e => setRegGrade(e.target.value)} required />
                                         </div>
                                     </div>
                                     <div className="w-1/2">
                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Grupo</label>
                                         <div className="relative">
                                             <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                            <input type="text" placeholder="A" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-9 pr-3 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regGroup} onChange={e => setRegGroup(e.target.value)} required />
+                                            <input type="text" placeholder="A" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-9 pr-2 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regGroup} onChange={e => setRegGroup(e.target.value)} required />
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <button type="submit" disabled={isAuthLoading} className="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-3.5 rounded-xl shadow-lg transition mt-4 flex justify-center items-center gap-2 active:scale-95">
-                                {isAuthLoading && <Loader2 className="w-4 h-4 animate-spin" />} Registrarse
+                            <button type="submit" disabled={isAuthLoading} className="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-3 rounded-xl shadow-lg transition flex justify-center items-center gap-2 active:scale-95 disabled:opacity-70">
+                                {isAuthLoading && <Loader2 className="w-4 h-4 animate-spin" />} Crear Cuenta
                             </button>
                         </form>
                     )}

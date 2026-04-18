@@ -1,5 +1,6 @@
 import firebase from "firebase/compat/app";
 import "firebase/compat/firestore";
+import "firebase/compat/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCTS6IXhO1_VhwlhDxcVQGZu-jB6PmsD78",
@@ -14,5 +15,8 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = firebase.initializeApp(firebaseConfig);
 
-// Initialize Cloud Firestore and get a reference to the service
+// Initialize Services
 export const db = app.firestore();
+export const auth = app.auth();
+export const googleProvider = new firebase.auth.GoogleAuthProvider();
+googleProvider.setCustomParameters({ hd: 'ucol.mx' }); // Sugiere solo cuentas @ucol.mx en el picker
