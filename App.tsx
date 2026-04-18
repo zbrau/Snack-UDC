@@ -145,7 +145,7 @@ const App: React.FC = () => {
                                 school: '',
                                 grade: '',
                                 group: '',
-                                balance: 50,
+                                balance: 0,
                                 loyaltyPoints: 0,
                                 createdAt: new Date().toISOString()
                             });
@@ -383,7 +383,7 @@ const App: React.FC = () => {
                     school: '',
                     grade: '',
                     group: '',
-                    balance: 50,
+                    balance: 0,
                     loyaltyPoints: 0,
                     createdAt: new Date().toISOString()
                 });
@@ -434,7 +434,7 @@ const App: React.FC = () => {
                     school: regSchool,
                     grade: regGrade,
                     group: regGroup,
-                    balance: 50,
+                    balance: 0,
                     loyaltyPoints: 0,
                     createdAt: new Date().toISOString()
                 };
