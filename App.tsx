@@ -764,6 +764,20 @@ const App: React.FC = () => {
     // --- Render Loading ---
     if (isLoadingUser) return <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900"><Loader2 className="w-10 h-10 text-green-600 animate-spin" /></div>;
 
+    // --- Render Profile Completion (blocks home) ---
+    if (needsProfileCompletion && user && user.email !== 'admin@ucol.mx') return (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+            <CompleteProfileModal
+                user={user}
+                onComplete={(school, grade, group) => {
+                    db.collection('users').doc(user.email).update({ school, grade, group })
+                        .then(() => setNeedsProfileCompletion(false))
+                        .catch(() => showToast('Error al guardar perfil', 'error'));
+                }}
+            />
+        </div>
+    );
+
     // --- Render Auth ---
     if (!user) return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4 font-sans transition-colors w-full">
@@ -783,7 +797,7 @@ const App: React.FC = () => {
                         >
                             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
                         </button>
-                        <div className="w-40 h-40 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg overflow-hidden animate-float border-4 border-white/30">
+                        <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg overflow-hidden animate-float border-4 border-white/30">
                             <img
                                 src="https://i.ibb.co/LdtGgYNY/Dise-o-sin-t-tulo.png"
                                 alt="Snack UDC Logo"
