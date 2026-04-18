@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Search, Home, Menu as MenuIcon, ShoppingBag, User as UserIcon, Bell, MapPin, Coins, QrCode, Check, X, LogOut, School, BookOpen, Users, ChevronRight, ArrowLeft, Loader2, Moon, Sun, ClipboardList, ShieldCheck, AlertCircle, DollarSign, Gift, Award, Sparkles, Flame, Clock, ChefHat, PackageCheck, History, Trash2, Banknote, Edit3, Plus, Image as ImageIcon, Save, Heart, HelpCircle, Github, Mail } from 'lucide-react';
+import { Search, Home, Menu as MenuIcon, ShoppingBag, User as UserIcon, Bell, MapPin, Coins, QrCode, Check, X, LogOut, School, BookOpen, Users, ChevronRight, ArrowLeft, Loader2, Moon, Sun, ClipboardList, ShieldCheck, AlertCircle, DollarSign, Gift, Award, Sparkles, Flame, Clock, ChefHat, PackageCheck, History, Trash2, Banknote, Edit3, Plus, Image as ImageIcon, Save, Heart, HelpCircle, Github, Mail, Pencil } from 'lucide-react';
 import FoodItem from './components/FoodItem';
 import Cart from './components/Cart';
 import AIAssistant from './components/AIAssistant';
@@ -102,6 +102,7 @@ const App: React.FC = () => {
     const [authError, setAuthError] = useState('');
     const [isAuthLoading, setIsAuthLoading] = useState(false);
     const [needsVerification, setNeedsVerification] = useState(false);
+    const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false);
 
     // 0. Efecto de Tema
     useEffect(() => {
@@ -199,8 +200,13 @@ const App: React.FC = () => {
                 const docSnap = await docRef.get();
 
                 if (docSnap.exists) {
-                    setUser(docSnap.data() as User);
+                    const data = docSnap.data() as User;
+                    setUser(data);
                     setNeedsVerification(false);
+                    // If Google user has no school info yet, ask them to complete profile
+                    if (!data.school || data.school === '') {
+                        setNeedsProfileCompletion(true);
+                    }
                 } else {
                     // Usuario en Auth pero sin perfil Firestore aún (puede pasar durante redirect)
                     // Esperar un momento y recargar
@@ -1117,6 +1123,26 @@ const App: React.FC = () => {
 
     const ProfileScreen = () => {
         if (!user) return null;
+
+        const [isEditingName, setIsEditingName] = React.useState(false);
+        const [newName, setNewName] = React.useState(user.name);
+        const [isSavingName, setIsSavingName] = React.useState(false);
+
+        const handleSaveName = async () => {
+            const trimmed = newName.trim();
+            if (!trimmed || trimmed === user.name) { setIsEditingName(false); return; }
+            setIsSavingName(true);
+            try {
+                await db.collection('users').doc(user.email).update({ name: trimmed });
+                showToast('Nombre actualizado ✓', 'success');
+                setIsEditingName(false);
+            } catch (e) {
+                showToast('Error al guardar el nombre', 'error');
+            } finally {
+                setIsSavingName(false);
+            }
+        };
+
         return (
             <div className="pb-24 animate-fade-in space-y-8 max-w-2xl mx-auto pt-8">
                 {/* Profile Header */}
@@ -1141,7 +1167,43 @@ const App: React.FC = () => {
                         </button>
                     </div>
 
-                    <h2 className="mt-4 font-bold text-2xl text-gray-800 dark:text-white">{user.name}</h2>
+                    {/* Editable Name */}
+                    <div className="mt-4 flex items-center gap-2">
+                        {isEditingName ? (
+                            <>
+                                <input
+                                    autoFocus
+                                    value={newName}
+                                    onChange={e => setNewName(e.target.value)}
+                                    onKeyDown={e => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setIsEditingName(false); }}
+                                    className="font-bold text-xl text-gray-800 dark:text-white bg-transparent border-b-2 border-green-500 outline-none text-center px-1 max-w-[220px]"
+                                    maxLength={50}
+                                />
+                                <button onClick={handleSaveName} disabled={isSavingName}
+                                    className="p-1.5 bg-green-500 hover:bg-green-600 text-white rounded-full transition-colors"
+                                    title="Guardar">
+                                    {isSavingName ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> : <Check size={14} />}
+                                </button>
+                                <button onClick={() => { setIsEditingName(false); setNewName(user.name); }}
+                                    className="p-1.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-full transition-colors"
+                                    title="Cancelar">
+                                    <X size={14} />
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <h2 className="font-bold text-2xl text-gray-800 dark:text-white">{user.name}</h2>
+                                {user.email !== 'admin@ucol.mx' && (
+                                    <button onClick={() => { setNewName(user.name); setIsEditingName(true); }}
+                                        className="p-1.5 text-gray-400 hover:text-green-500 dark:hover:text-green-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                        title="Editar nombre">
+                                        <Pencil size={15} />
+                                    </button>
+                                )}
+                            </>
+                        )}
+                    </div>
+
                     <div className="flex items-center gap-2 mt-1">
                         <span className="text-gray-500 dark:text-gray-400 text-sm">{user.school || 'Administración'} • {user.group || 'Staff'}</span>
                     </div>
@@ -1512,6 +1574,100 @@ const App: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Complete Profile Modal for new Google users */}
+            {needsProfileCompletion && user && user.email !== 'admin@ucol.mx' && (
+                <CompleteProfileModal
+                    user={user}
+                    onComplete={(school, grade, group) => {
+                        db.collection('users').doc(user.email).update({ school, grade, group })
+                            .then(() => setNeedsProfileCompletion(false))
+                            .catch(() => showToast('Error al guardar perfil', 'error'));
+                    }}
+                />
+            )}
+        </div>
+    );
+};
+
+const CompleteProfileModal: React.FC<{
+    user: User;
+    onComplete: (school: string, grade: string, group: string) => void;
+}> = ({ user, onComplete }) => {
+    const [school, setSchool] = React.useState('');
+    const [grade, setGrade] = React.useState('');
+    const [group, setGroup] = React.useState('');
+    const [isSaving, setIsSaving] = React.useState(false);
+    const [error, setError] = React.useState('');
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!school || !grade || !group) { setError('Por favor completa todos los campos.'); return; }
+        setIsSaving(true);
+        setError('');
+        try { onComplete(school, grade, group); }
+        finally { setIsSaving(false); }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+            <div className="relative z-10 bg-white dark:bg-[#1e2330] rounded-3xl shadow-2xl w-full max-w-md p-8 animate-bounce-in">
+                <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <School className="w-8 h-8 text-green-600 dark:text-green-400" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">¡Bienvenido!</h2>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                        Hola <span className="font-semibold text-green-600">{user.name.split(' ')[0]}</span>, completa tu perfil para continuar.
+                    </p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Bachillerato</label>
+                        <select value={school} onChange={e => setSchool(e.target.value)}
+                            className="w-full bg-gray-50 dark:bg-[#0f1218] border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500/30" required>
+                            <option value="">Selecciona tu bachillerato</option>
+                            {Object.entries(BACHILLERATOS).map(([campus, schools]) => (
+                                <optgroup key={campus} label={campus}>
+                                    {(schools as string[]).map(s => <option key={s} value={s}>{s}</option>)}
+                                </optgroup>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Grado</label>
+                        <select value={grade} onChange={e => setGrade(e.target.value)}
+                            className="w-full bg-gray-50 dark:bg-[#0f1218] border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500/30" required>
+                            <option value="">Selecciona tu grado</option>
+                            <option value="1°">1° Grado</option>
+                            <option value="2°">2° Grado</option>
+                            <option value="3°">3° Grado</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Grupo</label>
+                        <select value={group} onChange={e => setGroup(e.target.value)}
+                            className="w-full bg-gray-50 dark:bg-[#0f1218] border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500/30" required>
+                            <option value="">Selecciona tu grupo</option>
+                            {['A','B','C','D','E','F','G','H'].map(g => <option key={g} value={g}>{g}</option>)}
+                        </select>
+                    </div>
+
+                    {error && <p className="text-red-500 text-sm text-center font-medium">{error}</p>}
+
+                    <button type="submit" disabled={isSaving}
+                        className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-bold py-4 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg mt-2">
+                        {isSaving
+                            ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            : <><Check size={18} /> Guardar y continuar</>
+                        }
+                    </button>
+                </form>
+            </div>
         </div>
     );
 };
