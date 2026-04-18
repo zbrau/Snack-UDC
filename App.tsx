@@ -783,7 +783,7 @@ const App: React.FC = () => {
                         >
                             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
                         </button>
-                        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg overflow-hidden animate-float border-4 border-white/30">
+                        <div className="w-40 h-40 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg overflow-hidden animate-float border-4 border-white/30">
                             <img
                                 src="https://i.ibb.co/LdtGgYNY/Dise-o-sin-t-tulo.png"
                                 alt="Snack UDC Logo"
