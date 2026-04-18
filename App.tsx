@@ -348,12 +348,49 @@ const App: React.FC = () => {
         setAuthError('');
         setIsAuthLoading(true);
         try {
-            // Redirect is more reliable in production (avoids COOP/popup issues)
-            await auth.signInWithRedirect(googleProvider);
-            // The page will redirect. onAuthStateChanged will handle the result when it comes back.
+            const result = await auth.signInWithPopup(googleProvider);
+            const fbUser = result.user;
+
+            if (!fbUser || !fbUser.email) {
+                setAuthError('No se pudo obtener el correo de Google.');
+                await auth.signOut();
+                setIsAuthLoading(false);
+                return;
+            }
+
+            // Verificar dominio @ucol.mx
+            if (!fbUser.email.endsWith('@ucol.mx')) {
+                setAuthError('Solo se permiten cuentas institucionales @ucol.mx.');
+                await auth.signOut();
+                setIsAuthLoading(false);
+                return;
+            }
+
+            // Crear perfil en Firestore si es la primera vez
+            const docRef = db.collection('users').doc(fbUser.email);
+            const docSnap = await docRef.get();
+            if (!docSnap.exists) {
+                await docRef.set({
+                    name: fbUser.displayName || '',
+                    email: fbUser.email,
+                    avatar: fbUser.photoURL || '',
+                    school: '',
+                    grade: '',
+                    group: '',
+                    balance: 50,
+                    loyaltyPoints: 0,
+                    createdAt: new Date().toISOString()
+                });
+            }
+            // onAuthStateChanged se encargará de cargar el usuario
         } catch (err: any) {
             console.error(err);
-            setAuthError('Error al iniciar sesión con Google. Intenta de nuevo.');
+            if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+                // El usuario cerró el popup — no mostrar error
+            } else {
+                setAuthError('Error al iniciar sesión con Google. Intenta de nuevo.');
+            }
+        } finally {
             setIsAuthLoading(false);
         }
     };
