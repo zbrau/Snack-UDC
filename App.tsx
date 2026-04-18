@@ -119,6 +119,48 @@ const App: React.FC = () => {
 
     // 1. Efecto de inicialización Session con Firebase Auth
     useEffect(() => {
+        // Handle Google redirect result (runs once on page load after a redirect)
+        const handleRedirectResult = async () => {
+            try {
+                const result = await auth.getRedirectResult();
+                if (result && result.user) {
+                    const fbUser = result.user;
+                    if (fbUser.email && !fbUser.email.endsWith('@ucol.mx')) {
+                        // Wrong domain — sign out and show error
+                        await auth.signOut();
+                        setAuthError('Solo se permiten cuentas institucionales @ucol.mx.');
+                        setIsLoadingUser(false);
+                        return;
+                    }
+                    // If profile doesn't exist in Firestore, create it
+                    if (fbUser.email) {
+                        const docRef = db.collection('users').doc(fbUser.email);
+                        const docSnap = await docRef.get();
+                        if (!docSnap.exists) {
+                            await docRef.set({
+                                name: fbUser.displayName || '',
+                                email: fbUser.email,
+                                avatar: fbUser.photoURL || '',
+                                school: '',
+                                grade: '',
+                                group: '',
+                                balance: 50,
+                                loyaltyPoints: 0,
+                                createdAt: new Date().toISOString()
+                            });
+                        }
+                    }
+                }
+            } catch (err: any) {
+                console.error('Redirect result error:', err);
+                if (err.code !== 'auth/no-auth-event') {
+                    setAuthError('Error al procesar Google Sign-In.');
+                }
+            }
+        };
+
+        handleRedirectResult();
+
         const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
             if (!firebaseUser) {
                 // Si no hay usuario en Firebase, revisamos si era el admin hardcoded
@@ -134,10 +176,19 @@ const App: React.FC = () => {
                 return;
             }
 
-            // Si hay usuario, verificamos si su correo está validado
-            if (!firebaseUser.emailVerified) {
+            // Google accounts are always verified. Email/password accounts need verification.
+            const isGoogleUser = firebaseUser.providerData?.some(p => p?.providerId === 'google.com');
+            if (!isGoogleUser && !firebaseUser.emailVerified) {
                 setNeedsVerification(true);
                 setUser(null);
+                setIsLoadingUser(false);
+                return;
+            }
+
+            // Verify @ucol.mx domain (safety check)
+            if (firebaseUser.email && !firebaseUser.email.endsWith('@ucol.mx')) {
+                await auth.signOut();
+                setAuthError('Solo se permiten cuentas institucionales @ucol.mx.');
                 setIsLoadingUser(false);
                 return;
             }
@@ -151,9 +202,14 @@ const App: React.FC = () => {
                     setUser(docSnap.data() as User);
                     setNeedsVerification(false);
                 } else {
-                    // El usuario existe en Auth pero no en Firestore (raro, pero posible)
-                    auth.signOut();
-                    setUser(null);
+                    // Usuario en Auth pero sin perfil Firestore aún (puede pasar durante redirect)
+                    // Esperar un momento y recargar
+                    setTimeout(() => {
+                        docRef.get().then(snap => {
+                            if (snap.exists) setUser(snap.data() as User);
+                            else auth.signOut();
+                        });
+                    }, 1500);
                 }
             } catch (error) {
                 console.error("Error recuperando perfil de Firestore:", error);
@@ -292,53 +348,12 @@ const App: React.FC = () => {
         setAuthError('');
         setIsAuthLoading(true);
         try {
-            const result = await auth.signInWithPopup(googleProvider);
-            const fbUser = result.user;
-
-            if (!fbUser || !fbUser.email) {
-                setAuthError('No se pudo obtener el correo de Google.');
-                await auth.signOut();
-                return;
-            }
-
-            // Verificar dominio @ucol.mx
-            if (!fbUser.email.endsWith('@ucol.mx')) {
-                setAuthError('Solo se permiten cuentas institucionales @ucol.mx.');
-                await auth.signOut();
-                return;
-            }
-
-            // Verificar si ya tiene perfil en Firestore
-            const docRef = db.collection('users').doc(fbUser.email);
-            const docSnap = await docRef.get();
-
-            if (!docSnap.exists) {
-                // Primera vez: es nuevo alumno, necesita completar su perfil
-                // Guardamos datos básicos de Google y pediremos bachillerato después
-                const newUser: any = {
-                    name: fbUser.displayName || '',
-                    email: fbUser.email,
-                    avatar: fbUser.photoURL || '',
-                    school: '',   // se llenará en el perfil
-                    grade: '',
-                    group: '',
-                    balance: 50,
-                    loyaltyPoints: 0,
-                    createdAt: new Date().toISOString()
-                };
-                await docRef.set(newUser);
-            }
-            // onAuthStateChanged se encargará de cargar el usuario
+            // Redirect is more reliable in production (avoids COOP/popup issues)
+            await auth.signInWithRedirect(googleProvider);
+            // The page will redirect. onAuthStateChanged will handle the result when it comes back.
         } catch (err: any) {
             console.error(err);
-            if (err.code === 'auth/popup-closed-by-user') {
-                // user closed popup, no error msg
-            } else if (err.code === 'auth/cancelled-popup-request') {
-                // ignore
-            } else {
-                setAuthError('Error al iniciar sesión con Google. Intenta de nuevo.');
-            }
-        } finally {
+            setAuthError('Error al iniciar sesión con Google. Intenta de nuevo.');
             setIsAuthLoading(false);
         }
     };
