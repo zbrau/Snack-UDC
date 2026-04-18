@@ -921,17 +921,28 @@ const App: React.FC = () => {
                                 </div>
                                 <div className="flex gap-2">
                                     <div className="w-1/2">
-                                        <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Grado</label>
+                                        <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Semestre</label>
                                         <div className="relative">
-                                            <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                            <input type="text" placeholder="4°" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-9 pr-2 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regGrade} onChange={e => setRegGrade(e.target.value)} required />
+                                            <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+                                            <select className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-9 pr-2 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regGrade} onChange={e => setRegGrade(e.target.value)} required>
+                                                <option value="">Semestre</option>
+                                                <option value="1° Semestre">1° Semestre</option>
+                                                <option value="2° Semestre">2° Semestre</option>
+                                                <option value="3° Semestre">3° Semestre</option>
+                                                <option value="4° Semestre">4° Semestre</option>
+                                                <option value="5° Semestre">5° Semestre</option>
+                                                <option value="6° Semestre">6° Semestre</option>
+                                            </select>
                                         </div>
                                     </div>
                                     <div className="w-1/2">
                                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Grupo</label>
                                         <div className="relative">
-                                            <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                            <input type="text" placeholder="A" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-9 pr-2 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regGroup} onChange={e => setRegGroup(e.target.value)} required />
+                                            <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+                                            <select className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-9 pr-2 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regGroup} onChange={e => setRegGroup(e.target.value)} required>
+                                                <option value="">Grupo</option>
+                                                {['A','B','C','D','E','F'].map(g => <option key={g} value={g}>{g}</option>)}
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
@@ -1641,10 +1652,13 @@ const CompleteProfileModal: React.FC<{
                         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Grado</label>
                         <select value={grade} onChange={e => setGrade(e.target.value)}
                             className="w-full bg-gray-50 dark:bg-[#0f1218] border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500/30" required>
-                            <option value="">Selecciona tu grado</option>
-                            <option value="1°">1° Grado</option>
-                            <option value="2°">2° Grado</option>
-                            <option value="3°">3° Grado</option>
+                            <option value="">Selecciona tu semestre</option>
+                            <option value="1° Semestre">1° Semestre</option>
+                            <option value="2° Semestre">2° Semestre</option>
+                            <option value="3° Semestre">3° Semestre</option>
+                            <option value="4° Semestre">4° Semestre</option>
+                            <option value="5° Semestre">5° Semestre</option>
+                            <option value="6° Semestre">6° Semestre</option>
                         </select>
                     </div>
 
@@ -1653,7 +1667,7 @@ const CompleteProfileModal: React.FC<{
                         <select value={group} onChange={e => setGroup(e.target.value)}
                             className="w-full bg-gray-50 dark:bg-[#0f1218] border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500/30" required>
                             <option value="">Selecciona tu grupo</option>
-                            {['A','B','C','D','E','F','G','H'].map(g => <option key={g} value={g}>{g}</option>)}
+                            {['A','B','C','D','E','F'].map(g => <option key={g} value={g}>{g}</option>)}
                         </select>
                     </div>
 
