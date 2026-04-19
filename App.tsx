@@ -203,19 +203,27 @@ const App: React.FC = () => {
                     const data = docSnap.data() as User;
                     setUser(data);
                     setNeedsVerification(false);
-                    // If Google user has no school info yet, ask them to complete profile
+                    // Si el usuario de Google no tiene escuela, pedir que complete el perfil
                     if (!data.school || data.school === '') {
                         setNeedsProfileCompletion(true);
                     }
                 } else {
-                    // Usuario en Auth pero sin perfil Firestore aún (puede pasar durante redirect)
-                    // Esperar un momento y recargar
-                    setTimeout(() => {
-                        docRef.get().then(snap => {
-                            if (snap.exists) setUser(snap.data() as User);
-                            else auth.signOut();
-                        });
-                    }, 1500);
+                    // El doc aún no existe — handleGoogleLogin lo está creando.
+                    // needsProfileCompletion ya fue marcado en handleGoogleLogin.
+                    // Solo esperamos hasta que el onSnapshot lo detecte.
+                    setIsLoadingUser(false);
+                    // Reintento rápido en caso de race condition
+                    setTimeout(async () => {
+                        const retry = await docRef.get();
+                        if (retry.exists) {
+                            const data = retry.data() as User;
+                            setUser(data);
+                            if (!data.school || data.school === '') setNeedsProfileCompletion(true);
+                        } else {
+                            auth.signOut();
+                        }
+                    }, 800);
+                    return; // evitar el finally que llama setIsLoadingUser(false) de nuevo
                 }
             } catch (error) {
                 console.error("Error recuperando perfil de Firestore:", error);
@@ -376,6 +384,8 @@ const App: React.FC = () => {
             const docRef = db.collection('users').doc(fbUser.email);
             const docSnap = await docRef.get();
             if (!docSnap.exists) {
+                // Usuario nuevo — marcar que necesita completar perfil ANTES de que onAuthStateChanged renderice el home
+                setNeedsProfileCompletion(true);
                 await docRef.set({
                     name: fbUser.displayName || '',
                     email: fbUser.email,
@@ -387,6 +397,12 @@ const App: React.FC = () => {
                     loyaltyPoints: 0,
                     createdAt: new Date().toISOString()
                 });
+            } else {
+                // Usuario existente — revisar si por alguna razón no tiene escuela
+                const data = docSnap.data();
+                if (!data?.school || data.school === '') {
+                    setNeedsProfileCompletion(true);
+                }
             }
             // onAuthStateChanged se encargará de cargar el usuario
         } catch (err: any) {
