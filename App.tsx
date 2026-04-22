@@ -777,8 +777,8 @@ const App: React.FC = () => {
         }
     }, [user, toast]);
 
-    // --- Render Loading ---
-    if (isLoadingUser) return <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900"><Loader2 className="w-10 h-10 text-green-600 animate-spin" /></div>;
+    // --- Render Loading (Splash Screen) ---
+    if (isLoadingUser) return <SplashScreen />;
 
     // --- Render Profile Completion (blocks home) ---
     if (needsProfileCompletion && user && user.email !== 'admin@ucol.mx') return (
@@ -927,53 +927,54 @@ const App: React.FC = () => {
                                     <input type="password" placeholder="••••••••" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-11 pr-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regPass} onChange={e => setRegPass(e.target.value)} required />
                                 </div>
                             </div>
+                            {/* Bachillerato — fila completa */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Bachillerato</label>
+                                <div className="relative">
+                                    <School className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 z-10" />
+                                    <select
+                                        className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-9 pr-3 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors"
+                                        value={regSchool}
+                                        onChange={e => setRegSchool(e.target.value)}
+                                        required
+                                    >
+                                        <option value="" disabled>Selecciona tu plantel</option>
+                                        {Object.entries(BACHILLERATOS).map(([campus, schools]) => (
+                                            <optgroup key={campus} label={campus}>
+                                                {schools.map(school => (
+                                                    <option key={school} value={school}>{school}</option>
+                                                ))}
+                                            </optgroup>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Semestre + Grupo — fila separada */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Bachillerato</label>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Semestre</label>
                                     <div className="relative">
-                                        <School className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 z-10" />
-                                        <select
-                                            className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-9 pr-3 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors"
-                                            value={regSchool}
-                                            onChange={e => setRegSchool(e.target.value)}
-                                            required
-                                        >
-                                            <option value="" disabled>Selecciona tu plantel</option>
-                                            {Object.entries(BACHILLERATOS).map(([campus, schools]) => (
-                                                <optgroup key={campus} label={campus}>
-                                                    {schools.map(school => (
-                                                        <option key={school} value={school}>{school}</option>
-                                                    ))}
-                                                </optgroup>
-                                            ))}
+                                        <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none z-10" />
+                                        <select className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-9 pr-2 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regGrade} onChange={e => setRegGrade(e.target.value)} required>
+                                            <option value="">Semestre</option>
+                                            <option value="1° Semestre">1° Semestre</option>
+                                            <option value="2° Semestre">2° Semestre</option>
+                                            <option value="3° Semestre">3° Semestre</option>
+                                            <option value="4° Semestre">4° Semestre</option>
+                                            <option value="5° Semestre">5° Semestre</option>
+                                            <option value="6° Semestre">6° Semestre</option>
                                         </select>
                                     </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    <div className="w-1/2">
-                                        <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Semestre</label>
-                                        <div className="relative">
-                                            <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
-                                            <select className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-9 pr-2 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regGrade} onChange={e => setRegGrade(e.target.value)} required>
-                                                <option value="">Semestre</option>
-                                                <option value="1° Semestre">1° Semestre</option>
-                                                <option value="2° Semestre">2° Semestre</option>
-                                                <option value="3° Semestre">3° Semestre</option>
-                                                <option value="4° Semestre">4° Semestre</option>
-                                                <option value="5° Semestre">5° Semestre</option>
-                                                <option value="6° Semestre">6° Semestre</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className="w-1/2">
-                                        <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Grupo</label>
-                                        <div className="relative">
-                                            <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
-                                            <select className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-9 pr-2 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regGroup} onChange={e => setRegGroup(e.target.value)} required>
-                                                <option value="">Grupo</option>
-                                                {['A','B','C','D','E','F'].map(g => <option key={g} value={g}>{g}</option>)}
-                                            </select>
-                                        </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Grupo</label>
+                                    <div className="relative">
+                                        <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+                                        <select className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-9 pr-2 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-green-500 dark:focus:border-green-400 transition-colors" value={regGroup} onChange={e => setRegGroup(e.target.value)} required>
+                                            <option value="">Grupo</option>
+                                            {['A','B','C','D','E','F'].map(g => <option key={g} value={g}>{g}</option>)}
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -1193,7 +1194,23 @@ const App: React.FC = () => {
                             style={{ backgroundColor: 'transparent' }}
                             onClick={() => (user.avatar || user.email === 'admin@ucol.mx') && setIsAvatarZoomed(true)}>
                             {user.avatar ? (
-                                <img src={user.avatar} alt="User Avatar" className="w-full h-full object-cover" />
+                                <img
+                                    src={user.avatar}
+                                    alt={user.name}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        // Si la imagen falla (ej. restricción de Google), mostrar inicial
+                                        const target = e.currentTarget;
+                                        target.style.display = 'none';
+                                        const parent = target.parentElement;
+                                        if (parent) {
+                                            parent.style.backgroundColor = '#16a34a';
+                                            parent.style.color = 'white';
+                                            parent.style.fontSize = '2.5rem';
+                                            parent.innerHTML = user.name.charAt(0).toUpperCase();
+                                        }
+                                    }}
+                                />
                             ) : user.email === 'admin@ucol.mx' ? (
                                 <img src="https://i.ibb.co/LdtGgYNY/Dise-o-sin-t-tulo.png" alt="Admin Avatar" className="w-full h-full object-cover" />
                             ) : (
@@ -1385,7 +1402,7 @@ const App: React.FC = () => {
                         )}
 
                         {/* Categories */}
-                        <div className="animate-slide-up stagger-1">
+                        <div>
                             <h3 className="font-bold text-gray-800 dark:text-white text-lg mb-3">Categorías</h3>
                             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 -mx-4 px-4 md:mx-0 md:px-0">
                                 {CATEGORIES.filter(c => c !== Category.ALL).map((cat) => (
@@ -1399,7 +1416,7 @@ const App: React.FC = () => {
 
                         {/* Favorites Section */}
                         {(user?.favorites || []).length > 0 && (
-                            <div className="animate-slide-up stagger-1b">
+                            <div>
                                 <div className="flex justify-between items-center mb-3">
                                     <h3 className="font-bold text-gray-800 dark:text-white text-lg flex items-center gap-2"><Heart size={18} className="text-red-500 fill-current" /> Tus Favoritos</h3>
                                 </div>
@@ -1412,7 +1429,7 @@ const App: React.FC = () => {
                         )}
 
                         {/* Popular Items - Dynamic */}
-                        <div className="animate-slide-up stagger-2">
+                        <div>
                             <div className="flex justify-between items-center mb-3">
                                 <h3 className="font-bold text-gray-800 dark:text-white text-lg flex items-center gap-2"><Flame size={18} className="text-orange-500 fill-current" /> Más pedidos</h3>
                                 <button onClick={() => setActiveScreen('MENU')} className="text-green-600 dark:text-green-400 text-sm font-medium hover:underline">Ver todo</button>
@@ -1627,6 +1644,131 @@ const App: React.FC = () => {
                     }}
                 />
             )}
+        </div>
+    );
+};
+
+/* ─────────────────────────────────────────────────
+   SplashScreen — muestra mientras Firebase inicializa
+───────────────────────────────────────────────── */
+const SplashScreen: React.FC = () => {
+    const [visible, setVisible] = React.useState(true);
+
+    React.useEffect(() => {
+        // Mínimo 1.2 s de splash para que se aprecie la animación
+        const t = setTimeout(() => setVisible(false), 1200);
+        return () => clearTimeout(t);
+    }, []);
+
+    return (
+        <div
+            style={{
+                position: 'fixed', inset: 0, zIndex: 9999,
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                background: 'linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 70%, #16a34a 100%)',
+                transition: 'opacity 0.5s ease, transform 0.5s ease',
+                opacity: visible ? 1 : 0,
+                pointerEvents: visible ? 'all' : 'none',
+            }}
+        >
+            {/* Partículas de fondo */}
+            {[...Array(6)].map((_, i) => (
+                <div key={i} style={{
+                    position: 'absolute',
+                    width: `${80 + i * 40}px`, height: `${80 + i * 40}px`,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.04)',
+                    top: `${[10, 60, 30, 80, 5, 70][i]}%`,
+                    left: `${[70, 10, 85, 20, 45, 60][i]}%`,
+                    animation: `float ${3 + i * 0.5}s ease-in-out infinite alternate`,
+                }} />
+            ))}
+
+            {/* Glow pulsante detrás del logo */}
+            <div style={{
+                position: 'absolute',
+                width: '260px', height: '260px',
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(134,239,172,0.25) 0%, transparent 70%)',
+                animation: 'pulse 2s ease-in-out infinite',
+            }} />
+
+            {/* Logo container */}
+            <div style={{
+                width: '128px', height: '128px',
+                borderRadius: '50%',
+                background: 'white',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 0 0 8px rgba(255,255,255,0.15), 0 0 0 16px rgba(255,255,255,0.08), 0 20px 60px rgba(0,0,0,0.3)',
+                overflow: 'hidden',
+                animation: 'bounceIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both',
+                marginBottom: '28px',
+                position: 'relative',
+                zIndex: 10,
+            }}>
+                <img
+                    src="https://i.ibb.co/LdtGgYNY/Dise-o-sin-t-tulo.png"
+                    alt="Snack UDC"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+            </div>
+
+            {/* Nombre y tagline */}
+            <div style={{
+                textAlign: 'center', color: 'white', zIndex: 10,
+                animation: 'fadeUp 0.6s 0.3s both',
+                marginBottom: '40px',
+            }}>
+                <h1 style={{
+                    fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.5px',
+                    textShadow: '0 2px 20px rgba(0,0,0,0.2)',
+                    margin: 0,
+                }}>Snack UDC</h1>
+                <p style={{
+                    fontSize: '0.85rem', opacity: 0.8, margin: '4px 0 0',
+                    fontWeight: 500, letterSpacing: '0.5px',
+                }}>Cafetería Universidad de Colima</p>
+            </div>
+
+            {/* Dots de carga */}
+            <div style={{
+                display: 'flex', gap: '8px', zIndex: 10,
+                animation: 'fadeUp 0.6s 0.5s both',
+            }}>
+                {[0, 1, 2].map(i => (
+                    <div key={i} style={{
+                        width: '8px', height: '8px', borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.9)',
+                        animation: `dot-bounce 1.2s ${i * 0.2}s ease-in-out infinite`,
+                    }} />
+                ))}
+            </div>
+
+            <style>{`
+                @keyframes bounceIn {
+                    0% { transform: scale(0.3); opacity: 0; }
+                    60% { transform: scale(1.08); opacity: 1; }
+                    80% { transform: scale(0.95); }
+                    100% { transform: scale(1); }
+                }
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes dot-bounce {
+                    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+                    40% { transform: scale(1); opacity: 1; }
+                }
+                @keyframes float {
+                    from { transform: translateY(0px) rotate(0deg); }
+                    to { transform: translateY(-20px) rotate(10deg); }
+                }
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); opacity: 0.6; }
+                    50% { transform: scale(1.15); opacity: 1; }
+                }
+            `}</style>
         </div>
     );
 };
