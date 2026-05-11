@@ -39,7 +39,7 @@ const CreditsModal: React.FC<CreditsModalProps> = ({ isOpen, onClose }) => {
                     </div>
 
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full text-[10px] font-bold uppercase tracking-widest mb-3">
-                        <Sparkles size={12} /> Creador de la App
+                        <Sparkles size={12} /> Creador de la Web
                     </div>
 
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Braulio</h2>

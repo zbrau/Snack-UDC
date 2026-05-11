@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Clock, ShoppingBag, Coins, AlertCircle, Gift, Sparkles, Banknote, MessageSquare } from 'lucide-react';
 import { CartItem, PickupTime } from '../types';
 
@@ -11,6 +11,49 @@ interface CartProps {
     onUpdateNote: (id: string, variety: string | undefined, note: string) => void;
     onCheckout: (pickupTime: string, pointsRedeemed: number, discount: number, paymentMethod: 'CASH' | 'COINS') => void;
 }
+
+/**
+ * NoteInput — componente aislado con estado local.
+ * Solo llama a onCommit al perder el foco o presionar Enter,
+ * evitando que App re-renderice (y pierda foco) en cada tecla.
+ */
+const NoteInput: React.FC<{
+    initialValue: string;
+    onCommit: (note: string) => void;
+    onClear: () => void;
+}> = ({ initialValue, onCommit, onClear }) => {
+    const [value, setValue] = useState(initialValue);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => { inputRef.current?.focus(); }, []);
+
+    const commit = () => onCommit(value);
+
+    return (
+        <div className="relative">
+            <input
+                ref={inputRef}
+                type="text"
+                maxLength={80}
+                value={value}
+                onChange={e => setValue(e.target.value)}
+                onBlur={commit}
+                onKeyDown={e => { if (e.key === 'Enter') { commit(); inputRef.current?.blur(); } }}
+                placeholder="Ej: sin cebolla, extra salsa..."
+                className="w-full text-xs bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-lg px-3 py-2 text-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
+            />
+            {value && (
+                <button
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => { setValue(''); onClear(); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-400"
+                >
+                    <X size={12} />
+                </button>
+            )}
+        </div>
+    );
+};
 
 const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, loyaltyPoints, onUpdateQuantity, onUpdateNote, onCheckout }) => {
     const [selectedOption, setSelectedOption] = useState<PickupTime>(PickupTime.NOW);
@@ -122,25 +165,12 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, loyaltyPoints, onUp
 
                                     {isNoteOpen && (
                                         <div className="px-3 pb-3 animate-fade-in">
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    maxLength={80}
-                                                    value={item.note || ''}
-                                                    onChange={e => onUpdateNote(item.id, item.selectedVariety, e.target.value)}
-                                                    placeholder="Ej: sin cebolla, extra salsa..."
-                                                    autoFocus
-                                                    className="w-full text-xs bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-lg px-3 py-2 text-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
-                                                />
-                                                {item.note && (
-                                                    <button
-                                                        onClick={() => { onUpdateNote(item.id, item.selectedVariety, ''); setExpandedNoteId(null); }}
-                                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-400"
-                                                    >
-                                                        <X size={12} />
-                                                    </button>
-                                                )}
-                                            </div>
+                                            <NoteInput
+                                                key={noteKey}
+                                                initialValue={item.note || ''}
+                                                onCommit={note => onUpdateNote(item.id, item.selectedVariety, note)}
+                                                onClear={() => { onUpdateNote(item.id, item.selectedVariety, ''); setExpandedNoteId(null); }}
+                                            />
                                         </div>
                                     )}
                                 </div>

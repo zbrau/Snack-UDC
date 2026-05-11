@@ -1345,6 +1345,7 @@ const App: React.FC = () => {
                         </button>
                     </div>
 
+
                     {/* Developer Credits */}
                     <button onClick={() => setShowCreditsModal(true)} className="w-full bg-white dark:bg-[#1e2330] hover:bg-gray-50 dark:hover:bg-[#252b3b] p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between group transition-all shadow-sm">
                         <div>
