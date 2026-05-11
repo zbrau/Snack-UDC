@@ -15,6 +15,8 @@ import CreditsModal from './components/CreditsModal';
 import { Category, MenuItem, CartItem, Screen, PickupTime, Order, OrderStatus, User, PendingRecharge } from './types';
 // Firebase Imports
 import { db, auth, googleProvider } from './services/firebase';
+// Vercel Analytics
+import { Analytics } from '@vercel/analytics/react';
 
 const App: React.FC = () => {
     // --- Authentication State ---
@@ -1645,6 +1647,7 @@ const App: React.FC = () => {
                     }}
                 />
             )}
+            <Analytics />
         </div>
     );
 };
